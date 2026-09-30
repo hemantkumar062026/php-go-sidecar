@@ -106,6 +106,26 @@ COPY (
         print(f"  part {part+1}/{parts}: rows {lo:,}..{hi:,} → {dest.name} "
               f"({sz/1e6:.1f} MB, {dt:.1f}s)", flush=True)
 
+    # Segment defs reference (campaign UI / API also send these in JSON)
+    seg_path = out / "segment_defs.parquet"
+    con.execute(
+        f"""
+COPY (
+  SELECT * FROM (VALUES
+    (9001::BIGINT, 'Mastercard (>1M)'::VARCHAR, '[{{"field":"f30","op":"=","value":"Mastercard"}}]'::VARCHAR),
+    (9002, 'Delhi (>1M)', '[{{"field":"f18","op":"=","value":"Delhi"}}]'),
+    (9003, 'ICICI (>1M)', '[{{"field":"f6","op":"=","value":"ICICI"}}]'),
+    (9004, 'Age >= 40 (>1M)', '[{{"field":"f31","op":">=","value":40}}]'),
+    (532, 'Mastercard+50+Delhi', 'planted'),
+    (488, 'Mastercard age>51', 'planted'),
+    (533, 'Mastercard+50+Delhi+ICICI', 'planted'),
+    (489, 'Visa', 'planted')
+  ) AS t(segment_id, name, conditions_json)
+) TO '{seg_path}' (FORMAT PARQUET, COMPRESSION ZSTD)
+"""
+    )
+    print(f"wrote segment_defs → {seg_path}", flush=True)
+
     # Block files: ~0.2% include (56), ~0.05% exclude (57) by f2
     block_path = block_dir / "part-0.parquet"
     con.execute(

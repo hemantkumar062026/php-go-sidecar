@@ -8,6 +8,7 @@ use App\Bulk\Importer;
 use App\Compact\Service as CompactService;
 use App\Config\DuckdbConfig;
 use App\Duck\Session;
+use App\Filter\CampaignPreview;
 use App\Filter\QueryParser;
 use App\Pipeline\Service as Pipeline;
 use App\Schema\ContactAttrs;
@@ -68,6 +69,17 @@ final class Http
                 'sidecar' => getenv('DUCKDB_SIDECAR_URL') ?: null,
                 'persistent' => in_array(\App\Duck\Session::driver(), ['pdo_duckdb', 'python_sidecar', 'go_sidecar'], true),
             ]);
+            return;
+        }
+        if ($method === 'GET' && ($path === '/campaign' || $path === '/campaign.html')) {
+            $file = dirname(__DIR__, 2) . '/public/campaign.html';
+            if (!is_file($file)) {
+                $this->error(404, 'campaign UI not found');
+                return;
+            }
+            http_response_code(200);
+            header('Content-Type: text/html; charset=utf-8');
+            readfile($file);
             return;
         }
         if ($method === 'GET' && $path === '/api/schema/contacts') {
@@ -158,6 +170,49 @@ final class Http
             $this->json(200, $out);
             return;
         }
+        // Campaign audience breakdown (counts only)
+        if ($method === 'POST' && $path === '/api/sftp/campaign-preview') {
+            $body = $this->body();
+            $cfg = $this->duckCfg->resolve($body);
+            $input = $this->sftpParseInput(array_merge($body, [
+                'kind' => 'campaign',
+                'account_id' => (int) ($body['account_id'] ?? 0),
+            ]), $cfg);
+            if ((int) ($input['account_id'] ?? 0) <= 0) {
+                throw new \InvalidArgumentException('account_id is required and must be > 0');
+            }
+            if (isset($body['segment_defs']) && is_array($body['segment_defs'])) {
+                $input['segment_defs'] = $body['segment_defs'];
+            }
+            $bin = (string) ($cfg['binary'] ?? '');
+            $duck = new Session($bin !== '' ? $bin : null);
+            $opts = [];
+            if ($cfg['threads'] !== null) {
+                $opts['threads'] = (int) $cfg['threads'];
+            }
+            if ($cfg['memoryLimit'] !== null && $cfg['memoryLimit'] !== '') {
+                $opts['memory_limit'] = (string) $cfg['memoryLimit'];
+            }
+            if ($opts !== []) {
+                $duck->withOptions($opts);
+            }
+            $result = CampaignPreview::run($body, $input, $duck);
+            $this->json(200, [
+                'ok' => true,
+                'driver' => Session::driver(),
+                'sidecar' => getenv('DUCKDB_SIDECAR_URL') ?: null,
+                'duckdb' => [
+                    'binary' => $cfg['binary'],
+                    'parquetPath' => $cfg['parquetPath'],
+                    'threads' => $cfg['threads'],
+                    'memoryLimit' => $cfg['memoryLimit'],
+                ],
+                'campaign' => $result['campaign'],
+                'metrics' => $result['metrics'],
+                'sql' => $result['sql'],
+            ]);
+            return;
+        }
         if ($method === 'GET' && $path === '/api/contacts') {
             $account = $this->queryInt('account_id', 42);
             $cols = [];
@@ -224,6 +279,16 @@ final class Http
                 return;
             }
             $this->json(200, $row);
+            return;
+        }
+        if (preg_match('#^/api/campaigns/(\d+)$#', $path, $m) === 1 && ($method === 'PATCH' || $method === 'PUT')) {
+            $body = $this->body();
+            $account = (int) ($body['account_id'] ?? $this->queryInt('account_id', 0));
+            if ($account <= 0) {
+                throw new \InvalidArgumentException('account_id required');
+            }
+            $updated = $this->pipeline->updateCampaign($account, (int) $m[1], $body);
+            $this->json(200, $updated);
             return;
         }
         if (preg_match('#^/api/campaigns/(\d+)/launch$#', $path, $m) === 1 && $method === 'POST') {
@@ -559,6 +624,16 @@ final class Http
                 $blockGlob = rtrim($parquetPath, '/') . '/block_file_data/*.parquet';
             }
             $input['block_file_glob'] = $blockGlob;
+
+            $blockTableGlob = (string) (
+                $body['block_table_glob']
+                ?? getenv('BLOCK_TABLE_GLOB')
+                ?: ''
+            );
+            if ($blockTableGlob === '') {
+                $blockTableGlob = rtrim($parquetPath, '/') . '/block_table/**/*.parquet';
+            }
+            $input['block_table_glob'] = $blockTableGlob;
         } elseif (isset($body['schema'])) {
             $input['schema'] = (string) $body['schema'];
         }

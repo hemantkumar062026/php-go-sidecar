@@ -13,7 +13,7 @@ use App\Schema\SftpContact;
  *   [[{type, operator, options}, ...], [...]]
  *
  * Supported types:
- *   status | attributes | segments | block_files | stats
+ *   status | attributes | segments | block_files | block_table | stats
  */
 final class ProductFilter
 {
@@ -121,6 +121,7 @@ final class ProductFilter
             'attributes' => self::attributeRule($operator, $options),
             'segments' => self::segmentRule($operator, $options, $ctx),
             'block_files' => self::blockRule($operator, $options, $ctx),
+            'block_table' => self::blockTableRule($operator, $options, $ctx),
             'stats' => self::statsRule($operator, $options),
             default => throw new \InvalidArgumentException('unsupported product filter type "' . $type . '"'),
         };
@@ -294,6 +295,45 @@ final class ProductFilter
             'in_blockfiles', 'in_any_blockfiles' => ['op' => 'raw', 'sql' => $exists],
             'out_of_any_blockfiles', 'not_in_blockfiles', 'out_of_blockfiles' => ['op' => 'raw', 'sql' => 'NOT ' . $exists],
             default => throw new \InvalidArgumentException('unsupported block_files operator "' . $operator . '"'),
+        };
+    }
+
+    /**
+     * Email-based block_table (account_id, block_id, email) — ~1 lakh contacts per block_id.
+     *
+     * @param list<mixed> $options
+     * @param array<string, mixed> $ctx
+     * @return array<string, mixed>
+     */
+    private static function blockTableRule(string $operator, array $options, array $ctx): array
+    {
+        $ids = [];
+        foreach ($options as $v) {
+            if (!is_numeric($v)) {
+                throw new \InvalidArgumentException('block_table block_id must be numeric');
+            }
+            $ids[] = (string) (int) $v;
+        }
+        if ($ids === []) {
+            throw new \InvalidArgumentException('block_table options cannot be empty');
+        }
+
+        $glob = (string) ($ctx['block_table_glob'] ?? '');
+        if ($glob === '') {
+            throw new \InvalidArgumentException('block_table_glob is required when using block_table filters');
+        }
+        $globSql = str_replace("'", "''", $glob);
+        $list = implode(', ', $ids);
+        // Use IN-subquery (not EXISTS) so "email" is the outer contact column.
+        // block_table also has an email column; EXISTS ... bt.email = "email" would bind
+        // "email" to bt.email and match every outer row.
+        $inList = '"email" IN (SELECT bt.email FROM read_parquet(\'' . $globSql . '\') AS bt'
+            . ' WHERE bt.block_id IN (' . $list . '))';
+
+        return match ($operator) {
+            'in_block_table', 'in_any_block_table' => ['op' => 'raw', 'sql' => $inList],
+            'out_of_block_table', 'out_of_any_block_table', 'not_in_block_table' => ['op' => 'raw', 'sql' => 'NOT (' . $inList . ')'],
+            default => throw new \InvalidArgumentException('unsupported block_table operator "' . $operator . '"'),
         };
     }
 

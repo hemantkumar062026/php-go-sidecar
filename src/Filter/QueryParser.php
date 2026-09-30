@@ -118,6 +118,7 @@ final class QueryParser
                 $ctx = [
                     'segment_defs' => $input['segment_defs'] ?? [],
                     'block_file_glob' => (string) ($input['block_file_glob'] ?? ''),
+                    'block_table_glob' => (string) ($input['block_table_glob'] ?? ''),
                     'block_match_field' => (string) ($input['block_match_field'] ?? 'f2'),
                     'dialect' => strtolower(trim((string) ($input['dialect'] ?? 'mariadb'))),
                 ];

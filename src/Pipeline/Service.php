@@ -83,6 +83,53 @@ final class Service
         return $campaign;
     }
 
+    /**
+     * Update editable campaign columns (name, channel, segment_id, status).
+     *
+     * @param array<string, mixed> $patch
+     * @return array<string, mixed>
+     */
+    public function updateCampaign(int $accountId, int $campaignId, array $patch): array
+    {
+        $camp = $this->store->getCampaign($accountId, $campaignId);
+        if ($camp === null) {
+            throw new \InvalidArgumentException('campaign not found');
+        }
+
+        if (array_key_exists('name', $patch)) {
+            $name = trim((string) $patch['name']);
+            if ($name === '') {
+                throw new \InvalidArgumentException('name cannot be empty');
+            }
+            $camp['name'] = $name;
+        }
+        if (array_key_exists('channel', $patch)) {
+            $channel = strtolower(trim((string) $patch['channel']));
+            if ($channel !== 'email' && $channel !== 'sms') {
+                throw new \InvalidArgumentException('channel must be email or sms');
+            }
+            $camp['channel'] = $channel;
+        }
+        if (array_key_exists('segment_id', $patch)) {
+            $seg = trim((string) $patch['segment_id']);
+            if ($seg === '') {
+                throw new \InvalidArgumentException('segment_id cannot be empty');
+            }
+            $camp['segment_id'] = $seg;
+        }
+        if (array_key_exists('status', $patch)) {
+            $status = strtolower(trim((string) $patch['status']));
+            $allowed = ['draft', 'running', 'paused', 'completed', 'cancelled'];
+            if (!in_array($status, $allowed, true)) {
+                throw new \InvalidArgumentException('status must be one of: ' . implode(', ', $allowed));
+            }
+            $camp['status'] = $status;
+        }
+
+        $this->writeCampaignMeta($camp, 'upsert');
+        return $camp;
+    }
+
     /** @return array{campaign:array<string,mixed>,queued:int} */
     public function launchCampaign(int $accountId, int $campaignId): array
     {
