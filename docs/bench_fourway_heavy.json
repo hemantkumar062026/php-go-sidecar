@@ -1,0 +1,91 @@
+{
+  "query": "full-table SELECT * materialize \u2014 NO WHERE, ~50M rows \u00d7 all cols",
+  "parallel": 4,
+  "dataset_rows": 50000000,
+  "pool_duckdb": {
+    "size": 8,
+    "threads_per_conn": 2,
+    "memory_limit": "4GB"
+  },
+  "mariadb": {
+    "idle_rss_mb": 4275.2,
+    "peak_rss_mb": 4390.9,
+    "delta_mb": 115.7,
+    "batch_wall_ms": 209159.5,
+    "per_query_server_ms": {
+      "min": 151958.2,
+      "p50": 209040.6,
+      "max": 209040.7,
+      "avg": 180500.1
+    },
+    "bytes_sample": 15607180007,
+    "note": "SELECT * INTO OUTFILE CSV (uncompressed); DuckDB paths write ZSTD parquet",
+    "errors": 0,
+    "version": "11.4.13",
+    "buffer_pool": "4G",
+    "port": 3307
+  },
+  "python_sidecar": {
+    "idle_rss_mb": 15.3,
+    "peak_rss_mb": 5076.8,
+    "delta_mb": 5061.5,
+    "batch_wall_ms": 24221.7,
+    "per_query_server_ms": {
+      "min": 23892.0,
+      "p50": 24078.1,
+      "max": 24207.9,
+      "avg": 24038.7
+    },
+    "bytes_sample": 997302127,
+    "errors": 0
+  },
+  "go_sidecar": {
+    "idle_rss_mb": 17.8,
+    "peak_rss_mb": 5118.6,
+    "delta_mb": 5100.8,
+    "batch_wall_ms": 33733.3,
+    "per_query_server_ms": {
+      "min": 33479.6,
+      "p50": 33625.4,
+      "max": 33727.1,
+      "avg": 33602.4
+    },
+    "bytes_sample": 971258180,
+    "errors": 0
+  },
+  "satur.io": {
+    "peak_sum_rss_mb": 9321.4,
+    "batch_wall_ms": 35698.4,
+    "per_query_server_ms": {
+      "min": 33809.9,
+      "p50": 35242.7,
+      "max": 35478.1,
+      "avg": 34605.8
+    },
+    "bytes_sample": 997302259,
+    "errors": 0
+  },
+  "ranking": {
+    "fastest_batch_wall": "python_sidecar",
+    "batch_wall_ms": {
+      "python_sidecar": 24221.7,
+      "go_sidecar": 33733.3,
+      "satur.io": 35698.4,
+      "mariadb": 209159.5
+    },
+    "lowest_peak_ram": "mariadb",
+    "peak_rss_mb": {
+      "python_sidecar": 5076.8,
+      "go_sidecar": 5118.6,
+      "satur.io": 9321.4,
+      "mariadb": 4390.9
+    },
+    "vs_python_wall_x": {
+      "python_sidecar": 1.0,
+      "go_sidecar": 1.39,
+      "satur.io": 1.47,
+      "mariadb": 8.64
+    },
+    "mariadb_vs_python_x": 8.64
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "dataset": "temp-cursor parquet_contacts_5cr",
+  "query": "SELECT * FROM read_parquet(...)  -- no WHERE",
+  "rows": 50000000,
+  "columns": 43,
+  "column_names_sample": [
+    "id",
+    "account_id",
+    "primary_key",
+    "email",
+    "mobile",
+    "first_name",
+    "last_name",
+    "created_at",
+    "updated_at",
+    "subscribed_on",
+    "last_emailed",
+    "last_sms",
+    "is_opened",
+    "is_clicked",
+    "last_opened"
+  ],
+  "metrics": {
+    "count_star_ms": 13.1,
+    "select_star_copy_to_parquet_ms": 9325.6,
+    "select_star_copy_output_bytes": 997302127,
+    "select_star_copy_output_mb": 997.3,
+    "select_star_fetchmany_all_rows_ms": 119067.6,
+    "select_star_fetchmany_rows": 50000000,
+    "select_star_fetchmany_peak_rss_mb": 4264.4,
+    "select_star_limit_1000_ms": 27.8,
+    "rows_per_sec_fetch": 419929
+  },
+  "threads": 4,
+  "memory_limit": "8GB",
+  "note": "COPY and fetchmany force full SELECT * (all columns, all rows). count(*) alone can use footer metadata and is not SELECT *."
+}

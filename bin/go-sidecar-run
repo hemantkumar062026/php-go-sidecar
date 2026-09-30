@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/../sidecar/go"
+export SIDECAR_HOST="${SIDECAR_HOST:-127.0.0.1}"
+export SIDECAR_PORT="${SIDECAR_PORT:-8091}"
+export DUCKDB_THREADS="${DUCKDB_THREADS:-2}"
+export DUCKDB_POOL_SIZE="${DUCKDB_POOL_SIZE:-8}"
+export DUCKDB_MEMORY_LIMIT="${DUCKDB_MEMORY_LIMIT:-4GB}"
+echo "Building Go DuckDB sidecar…"
+go mod tidy
+go build -o ../../bin/go-sidecar .
+echo "Starting Go DuckDB sidecar on ${SIDECAR_HOST}:${SIDECAR_PORT}…"
+exec ../../bin/go-sidecar

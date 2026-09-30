@@ -1,0 +1,51 @@
+{
+  "account_id": 1133,
+  "mode": "both",
+  "dialect": "duckdb",
+  "lake_glob": "/Users/lumegalabs/Projects/php-parquet-duckdb/data/dummy/contact/**/*.parquet",
+  "filter": {
+    "op": "and",
+    "children": [
+      { "datatype": "tinyint", "op": "eq", "field": "email_status", "value": 1 },
+      { "datatype": "tinyint", "op": "neq", "field": "sms_status", "value": 9 },
+      { "datatype": "tinyint", "op": "gte", "field": "f31", "value": 30 },
+      { "datatype": "tinyint", "op": "lte", "field": "f31", "value": 60 },
+      { "datatype": "bigint", "op": "gt", "field": "id", "value": 0 },
+      { "datatype": "bigint", "op": "lt", "field": "id", "value": 1000 },
+      { "datatype": "tinyint", "op": "between", "field": "f31", "values": [25, 60] },
+      { "datatype": "tinyint", "op": "not_between", "field": "f31", "values": [1, 5] },
+      { "datatype": "date", "op": "gt", "field": "f7", "value": "2019-01-01" },
+      { "datatype": "date", "op": "lt", "field": "f7", "value": "2023-12-31" },
+      { "datatype": "date", "op": "between", "field": "f7", "values": ["2019-06-01", "2022-12-31"] },
+      { "datatype": "varchar", "op": "in", "field": "f18", "values": ["Delhi", "Mumbai", "Pune"] },
+      { "datatype": "varchar", "op": "not_in", "field": "f30", "values": ["Amex"] },
+      { "datatype": "varchar", "op": "contains", "field": "email", "value": "@example.com" },
+      { "datatype": "varchar", "op": "starts_with", "field": "primary_key", "value": "pk-" },
+      { "datatype": "varchar", "op": "ends_with", "field": "email", "value": ".com" },
+      { "datatype": "varchar", "op": "not_null", "field": "email" },
+      {
+        "op": "or",
+        "children": [
+          { "datatype": "varchar", "op": "is_null", "field": "f6" },
+          { "datatype": "varchar", "op": "not_contains", "field": "f6", "value": "ICICI" }
+        ]
+      },
+      {
+        "op": "not",
+        "children": [
+          { "datatype": "varchar", "op": "eq", "field": "f2", "value": "EXC57" }
+        ]
+      },
+      {
+        "op": "and",
+        "children": [
+          { "datatype": "varchar", "op": "eq", "field": "f30", "value": "Mastercard" },
+          { "datatype": "varchar", "op": "eq", "field": "f18", "value": "Delhi" }
+        ]
+      }
+    ]
+  },
+  "select": ["id", "email", "f2", "f6", "f7", "f18", "f30", "f31", "email_status"],
+  "limit": 10,
+  "order_by": "id"
+}

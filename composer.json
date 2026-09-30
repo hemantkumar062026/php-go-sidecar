@@ -1,0 +1,14 @@
+{
+  "name": "lumegalabs/php-parquet-duckdb",
+  "description": "PHP port of the TempCodeShare Parquet warehouse. DuckDB is the SQL engine; Parquet files are the only durable store.",
+  "type": "project",
+  "require": {
+    "php": ">=8.2",
+    "satur.io/duckdb": "^2.2"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "src/"
+    }
+  }
+}

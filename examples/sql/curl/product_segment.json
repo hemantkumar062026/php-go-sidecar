@@ -1,0 +1,19 @@
+{
+  "account_id": 1133,
+  "mode": "both",
+  "dialect": "duckdb",
+  "parquet_path": "/Users/lumegalabs/Projects/php-parquet-duckdb/data/dummy",
+  "kind": "segment",
+  "filter": [
+    [
+      { "type": "status", "operator": "status_active", "options": ["email"] },
+      { "type": "attributes", "operator": "text_attr_equals", "options": ["f30", "Mastercard"] },
+      { "type": "attributes", "operator": "number_attr_equals", "options": ["f31", "50"] },
+      { "type": "attributes", "operator": "text_attr_equals", "options": ["f18", "Delhi"] },
+      { "type": "attributes", "operator": "text_attr_equals", "options": ["f6", "ICICI"] }
+    ]
+  ],
+  "select": ["id", "email", "f2", "f6", "f18", "f30", "f31", "email_status"],
+  "limit": 10,
+  "order_by": "id"
+}

@@ -1,0 +1,99 @@
+{
+  "note": "Same DuckDB 1.4.5; pool=8; threads=2; 5cr lake",
+  "python_sidecar": {
+    "count_segment": {
+      "serial_wall_ms": {
+        "min": 469.4,
+        "p50": 485.7,
+        "avg": 484.1,
+        "max": 490.4
+      },
+      "serial_server_ms": {
+        "min": 468.4,
+        "p50": 484.9,
+        "avg": 483.0,
+        "max": 489.6
+      },
+      "parallel20_batch_ms": 2453.1,
+      "parallel20_server_ms": {
+        "min": 909.9,
+        "p50": 1869.3,
+        "avg": 1602.4,
+        "max": 2447.3
+      },
+      "idle_rss_mb": 55.3,
+      "peak_rss_mb": 504.2,
+      "result": 4762
+    },
+    "heavy_select_star_x4": {
+      "batch_wall_ms": 18383.2,
+      "per_query_server_ms": {
+        "min": 18223.8,
+        "p50": 18259.7,
+        "avg": 18279.2,
+        "max": 18373.7
+      },
+      "idle_rss_mb": 504.2,
+      "peak_rss_mb": 6063.9,
+      "bytes_sample": 997302127
+    }
+  },
+  "go_sidecar": {
+    "count_segment": {
+      "serial_wall_ms": {
+        "min": 500.3,
+        "p50": 512.6,
+        "avg": 509.3,
+        "max": 517.9
+      },
+      "serial_server_ms": {
+        "min": 499.7,
+        "p50": 511.8,
+        "avg": 508.6,
+        "max": 517.2
+      },
+      "parallel20_batch_ms": 2530.7,
+      "parallel20_server_ms": {
+        "min": 944.4,
+        "p50": 1931.7,
+        "avg": 1679.7,
+        "max": 2524.4
+      },
+      "idle_rss_mb": 48.6,
+      "peak_rss_mb": 610.8,
+      "result": 4762
+    },
+    "heavy_select_star_x4": {
+      "batch_wall_ms": 19395.9,
+      "per_query_server_ms": {
+        "min": 19251.7,
+        "p50": 19268.0,
+        "avg": 19291.0,
+        "max": 19376.2
+      },
+      "idle_rss_mb": 507.4,
+      "peak_rss_mb": 6234.1,
+      "bytes_sample": 997302127
+    }
+  },
+  "ranking": {
+    "count_serial_p50_ms": {
+      "python": 485.7,
+      "go": 512.6,
+      "go_vs_python_x": 1.055
+    },
+    "heavy_x4_batch_ms": {
+      "python": 18383.2,
+      "go": 19395.9,
+      "go_vs_python_x": 1.055
+    },
+    "count_peak_rss_mb": {
+      "python": 504.2,
+      "go": 610.8
+    },
+    "heavy_peak_rss_mb": {
+      "python": 6063.9,
+      "go": 6234.1
+    }
+  }
+}

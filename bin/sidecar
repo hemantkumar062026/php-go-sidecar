@@ -1,0 +1,16 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/.."
+export SIDECAR_HOST="${SIDECAR_HOST:-127.0.0.1}"
+export SIDECAR_PORT="${SIDECAR_PORT:-8090}"
+export DUCKDB_THREADS="${DUCKDB_THREADS:-4}"
+export DUCKDB_MEMORY_LIMIT="${DUCKDB_MEMORY_LIMIT:-4GB}"
+export DUCKDB_POOL_SIZE="${DUCKDB_POOL_SIZE:-4}"
+
+if ! python3 -c "import duckdb" 2>/dev/null; then
+  echo "Installing sidecar deps (duckdb)…"
+  python3 -m pip install --user -r sidecar/requirements.txt
+fi
+
+echo "Starting Python DuckDB sidecar…"
+exec python3 sidecar/server.py

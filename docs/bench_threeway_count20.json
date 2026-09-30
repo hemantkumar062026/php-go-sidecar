@@ -1,0 +1,24 @@
+{
+  "query": "SELECT count(*) FROM lake (no WHERE)",
+  "parallel": 20,
+  "duckdb_versions": {
+    "python_sidecar": "1.4.5",
+    "go_sidecar": "1.1.3"
+  },
+  "results": [
+    {
+      "name": "python_sidecar",
+      "batch_wall_ms": 120.1,
+      "p50_server_ms": 66.5,
+      "max_server_ms": 84.7,
+      "avg_server_ms": 57.1
+    },
+    {
+      "name": "go_sidecar",
+      "batch_wall_ms": 119.0,
+      "p50_server_ms": 86.3,
+      "max_server_ms": 112.9,
+      "avg_server_ms": 75.9
+    }
+  ]
+}

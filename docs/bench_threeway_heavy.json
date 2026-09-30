@@ -1,0 +1,94 @@
+{
+  "query": "COPY (SELECT * FROM lake) \u2014 NO WHERE, ~50M rows \u00d7 all cols, ZSTD parquet",
+  "parallel": 4,
+  "pool": {
+    "size": 8,
+    "threads_per_conn": 2,
+    "memory_limit": "4GB"
+  },
+  "php_path": "PHP/HTTP client \u2192 sidecar /exec (same for python & go)",
+  "python_sidecar": {
+    "idle_rss_mb": 54.5,
+    "peak_rss_mb": 6179.6,
+    "after_rss_mb": 6123.4,
+    "delta_mb": 6125.1,
+    "batch_wall_ms": 17832.0,
+    "per_query_server_ms": {
+      "min": 17686.6,
+      "p50": 17772.2,
+      "max": 17821.0,
+      "avg": 17754.3
+    },
+    "per_query_wall_ms": {
+      "min": 17687.8,
+      "p50": 17774.4,
+      "max": 17822.7,
+      "avg": 17755.8
+    },
+    "bytes_sample": 997302127,
+    "errors": 0
+  },
+  "go_sidecar": {
+    "idle_rss_mb": 46.1,
+    "peak_rss_mb": 5623.0,
+    "after_rss_mb": 5454.9,
+    "delta_mb": 5577.0,
+    "batch_wall_ms": 29836.1,
+    "per_query_server_ms": {
+      "min": 29750.3,
+      "p50": 29781.2,
+      "max": 29824,
+      "avg": 29777.7
+    },
+    "per_query_wall_ms": {
+      "min": 29752.0,
+      "p50": 29781.8,
+      "max": 29825.2,
+      "avg": 29778.8
+    },
+    "bytes_sample": 971258180,
+    "errors": 0
+  },
+  "satur.io": {
+    "peak_sum_rss_mb": 11160.5,
+    "batch_wall_ms": 31046.2,
+    "per_query_server_ms": {
+      "min": 29342.4,
+      "p50": 30768.8,
+      "max": 30816.6,
+      "avg": 30080.7
+    },
+    "bytes_sample": 997302259,
+    "errors": 0
+  },
+  "ranking": {
+    "fastest_batch_wall": "python_sidecar",
+    "batch_wall_ms": {
+      "python_sidecar": 17832.0,
+      "go_sidecar": 29836.1,
+      "satur.io": 31046.2
+    },
+    "lowest_peak_ram": "go_sidecar",
+    "peak_rss_mb": {
+      "python_sidecar": 6179.6,
+      "go_sidecar": 5623.0,
+      "satur.io": 11160.5
+    },
+    "go_vs_python_wall_x": 1.673,
+    "saturo_vs_python_wall_x": 1.741,
+    "saturo_vs_go_wall_x": 1.041
+  },
+  "duckdb_cli": {
+    "driver": "duckdb_cli",
+    "parallel": 4,
+    "batch_wall_ms": 35837.2,
+    "per_query_wall_ms": {
+      "min": 34167.4,
+      "p50": 35726.8,
+      "max": 35824.5,
+      "avg": 35014.3
+    },
+    "peak_sum_rss_mb": 9473.6,
+    "bytes_sample": 997302259
+  }
+}

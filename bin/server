@@ -1,0 +1,30 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/.."
+export WAREHOUSE_ROOT="${WAREHOUSE_ROOT:-data/warehouse}"
+mkdir -p "$WAREHOUSE_ROOT"
+ADDR="${ADDR:-:8080}"
+PORT="${ADDR##*:}"
+HOST="${ADDR%:*}"
+if [ -z "$HOST" ] || [ "$HOST" = "$ADDR" ]; then
+  HOST="127.0.0.1"
+fi
+DRIVER="cli"
+if [ -n "${DUCKDB_SIDECAR_URL:-}" ]; then
+  KIND="${DUCKDB_SIDECAR_KIND:-}"
+  if [ -z "$KIND" ]; then
+    case "$DUCKDB_SIDECAR_URL" in
+      *:8091*) KIND="go" ;;
+      *) KIND="python" ;;
+    esac
+  fi
+  if [ "$KIND" = "go" ]; then
+    DRIVER="go_sidecar"
+  else
+    DRIVER="python_sidecar"
+  fi
+elif php -m 2>/dev/null | grep -q pdo_duckdb; then
+  DRIVER="pdo_duckdb"
+fi
+echo "ESP API listening on ${HOST}:${PORT} (warehouse=${WAREHOUSE_ROOT}, duck=${DRIVER})"
+exec php -S "${HOST}:${PORT}" -t public public/index.php

@@ -1,0 +1,8 @@
+/vendor/
+/data/warehouse/**
+!/data/warehouse/.gitkeep
+/data/demo/
+*.parquet.tmp
+.DS_Store
+.idea/
+/bin/go-sidecar

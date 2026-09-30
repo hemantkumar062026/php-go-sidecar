@@ -1,0 +1,62 @@
+{
+  "dataset": "temp-cursor 5cr",
+  "query": "segment count account_id=83 email_status=1 f6=f6-382 (cnt=7143)",
+  "parallel_requests": 20,
+  "duckdb_threads_per_conn": 2,
+  "sidecar_pool_size": 20,
+  "sidecar": {
+    "name": "python_sidecar",
+    "parallel": 20,
+    "warm_ms": 211.2,
+    "batch_wall_ms": 996.9,
+    "throughput_qps": 20.06,
+    "per_request_wall_ms": {
+      "min": 821.9,
+      "p50": 970.7,
+      "p95": 991.5,
+      "max": 991.6,
+      "avg": 963.2
+    },
+    "per_request_server_ms": {
+      "min": 820.3,
+      "p50": 962.1,
+      "p95": 981.9,
+      "max": 989.9,
+      "avg": 955.0
+    },
+    "errors": 0,
+    "counts": [
+      7143
+    ],
+    "ok": 20
+  },
+  "saturo": {
+    "name": "satur.io/duckdb",
+    "parallel": 20,
+    "warm_ms": 285.7,
+    "batch_wall_ms": 1107.5,
+    "throughput_qps": 18.06,
+    "per_request_wall_ms": {
+      "min": 589.9,
+      "p50": 1050.8,
+      "p95": 1079.0,
+      "max": 1081.8,
+      "avg": 1027.2
+    },
+    "per_request_server_ms": {
+      "min": 485.1,
+      "p50": 942.8,
+      "p95": 970.2,
+      "max": 990.0,
+      "avg": 911.6
+    },
+    "errors": 0,
+    "counts": [
+      7143
+    ],
+    "ok": 20
+  },
+  "winner_batch_wall": "sidecar",
+  "winner_p50_latency": "sidecar",
+  "winner_throughput": "sidecar"
+}

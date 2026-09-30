@@ -1,0 +1,91 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "677f7cf55ae91da647c41bea8995cb02",
+    "packages": [
+        {
+            "name": "satur.io/duckdb",
+            "version": "v2.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/satur-io/duckdb-php.git",
+                "reference": "9e30b059d5b86fc1e8025d448e20bdeeea21a0e3"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/satur-io/duckdb-php/zipball/9e30b059d5b86fc1e8025d448e20bdeeea21a0e3",
+                "reference": "9e30b059d5b86fc1e8025d448e20bdeeea21a0e3",
+                "shasum": ""
+            },
+            "require": {
+                "ext-ffi": "*",
+                "php": ">=8.3"
+            },
+            "require-dev": {
+                "ext-curl": "*",
+                "phpbench/phpbench": "^1.4",
+                "phpstan/phpstan": "^2.1",
+                "phpunit/phpunit": "^11.5"
+            },
+            "suggest": {
+                "ext-bcmath": "Required for numbers > PHP_INT_MAX",
+                "ext-zend-opcache": "For a better perfomance using a preload function"
+            },
+            "bin": [
+                "install-c-lib"
+            ],
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "aliases.php",
+                    "config.php"
+                ],
+                "psr-4": {
+                    "Saturio\\DuckDB\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Daniel Hernández-Marín",
+                    "email": "dani@satur.io"
+                }
+            ],
+            "description": "DuckDB API for PHP",
+            "keywords": [
+                "database",
+                "duckdb",
+                "ffi",
+                "performance"
+            ],
+            "support": {
+                "issues": "https://github.com/satur-io/duckdb-php/issues",
+                "source": "https://github.com/satur-io/duckdb-php/tree/v2.2.0"
+            },
+            "funding": [
+                {
+                    "url": "https://ko-fi.com/saturio",
+                    "type": "ko_fi"
+                }
+            ],
+            "time": "2026-08-15T10:24:39+00:00"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": {},
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": {
+        "php": ">=8.2"
+    },
+    "platform-dev": {},
+    "plugin-api-version": "2.9.0"
+}

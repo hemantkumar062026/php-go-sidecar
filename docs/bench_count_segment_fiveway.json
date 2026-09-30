@@ -1,0 +1,565 @@
+{
+  "workload": "segment COUNT + 10-col page with RAM metrics",
+  "dataset_rows": 50000000,
+  "parallel": 20,
+  "duckdb_threads": 2,
+  "ram_method": {
+    "python_sidecar": "ps RSS of sidecar PID on :8090",
+    "go_sidecar": "ps RSS of sidecar PID on :8091",
+    "mariadb": "docker stats MemUsage of bench-mariadb (+ tiny PHP client ephemeral)",
+    "satur.io": "sum RSS of concurrent php bench_saturio_one.php (each embeds libduckdb)",
+    "duckdb_cli": "sum RSS of concurrent duckdb CLI processes"
+  },
+  "queries": {
+    "count_segment": {
+      "python_sidecar": {
+        "serial": {
+          "wall_ms": {
+            "min": 485.9,
+            "p50": 491.6,
+            "avg": 489.6,
+            "max": 492.2
+          },
+          "server_ms": {
+            "min": 484.9,
+            "p50": 489.7,
+            "avg": 488.5,
+            "max": 491.2
+          },
+          "ram": {
+            "idle_rss_mb": 429.2,
+            "peak_engine_rss_mb": 571.2,
+            "after_rss_mb": 571.2,
+            "delta_mb": 142.0,
+            "peak_ephemeral_proc_mb": null,
+            "note": "engine = long-lived sidecar/mysqld"
+          },
+          "result": 4762
+        },
+        "parallel": {
+          "batch_wall_ms": 2314.3,
+          "per_req_wall_ms": {
+            "min": 886.0,
+            "p50": 1757.6,
+            "avg": 1527.4,
+            "max": 2307.9
+          },
+          "per_req_server_ms": {
+            "min": 878.7,
+            "p50": 1755.2,
+            "avg": 1523.8,
+            "max": 2306.5
+          },
+          "ram": {
+            "idle_rss_mb": 571.2,
+            "peak_engine_rss_mb": 705.9,
+            "after_rss_mb": 705.6,
+            "delta_mb": 134.7,
+            "peak_sum_ephemeral_rss_mb": null,
+            "peak_one_ephemeral_rss_mb": null,
+            "note": "engine = long-lived process; ephemeral sum = concurrent child procs"
+          },
+          "errors": 0
+        }
+      },
+      "go_sidecar": {
+        "serial": {
+          "wall_ms": {
+            "min": 853.4,
+            "p50": 859.3,
+            "avg": 858.6,
+            "max": 861.3
+          },
+          "server_ms": {
+            "min": 852.7,
+            "p50": 858.2,
+            "avg": 857.6,
+            "max": 860.4
+          },
+          "ram": {
+            "idle_rss_mb": 369.3,
+            "peak_engine_rss_mb": 369.7,
+            "after_rss_mb": 369.7,
+            "delta_mb": 0.4,
+            "peak_ephemeral_proc_mb": null,
+            "note": "engine = long-lived sidecar/mysqld"
+          },
+          "result": 4762
+        },
+        "parallel": {
+          "batch_wall_ms": 4002.9,
+          "per_req_wall_ms": {
+            "min": 1493.1,
+            "p50": 3003.0,
+            "avg": 2620.9,
+            "max": 3996.8
+          },
+          "per_req_server_ms": {
+            "min": 1491.5,
+            "p50": 3001.3,
+            "avg": 2619.5,
+            "max": 3995.5
+          },
+          "ram": {
+            "idle_rss_mb": 369.7,
+            "peak_engine_rss_mb": 395.6,
+            "after_rss_mb": 395.6,
+            "delta_mb": 25.9,
+            "peak_sum_ephemeral_rss_mb": null,
+            "peak_one_ephemeral_rss_mb": null,
+            "note": "engine = long-lived process; ephemeral sum = concurrent child procs"
+          },
+          "errors": 0
+        }
+      },
+      "satur.io": {
+        "serial": {
+          "wall_ms": {
+            "min": 622.0,
+            "p50": 631.0,
+            "avg": 630.6,
+            "max": 636.4
+          },
+          "server_ms": {
+            "min": 526.0,
+            "p50": 532,
+            "avg": 532.1,
+            "max": 538.4
+          },
+          "ram": {
+            "idle_rss_mb": null,
+            "peak_engine_rss_mb": null,
+            "after_rss_mb": null,
+            "delta_mb": null,
+            "peak_ephemeral_proc_mb": 114.8,
+            "note": "ephemeral = per-request duckdb CLI or PHP+FFI process"
+          },
+          "result": 4762
+        },
+        "parallel": {
+          "batch_wall_ms": 3054.6,
+          "per_req_wall_ms": {
+            "min": 2096.5,
+            "p50": 2927.1,
+            "avg": 2887.9,
+            "max": 3020.2
+          },
+          "per_req_server_ms": {
+            "min": 1839.3,
+            "p50": 2774.7,
+            "avg": 2711.9,
+            "max": 2882.6
+          },
+          "ram": {
+            "idle_rss_mb": null,
+            "peak_engine_rss_mb": null,
+            "after_rss_mb": null,
+            "delta_mb": null,
+            "peak_sum_ephemeral_rss_mb": 2160.9,
+            "peak_one_ephemeral_rss_mb": 122.5,
+            "note": "engine = long-lived process; ephemeral sum = concurrent child procs"
+          },
+          "errors": 0
+        }
+      },
+      "duckdb_cli": {
+        "serial": {
+          "wall_ms": {
+            "min": 620.5,
+            "p50": 629.3,
+            "avg": 628.2,
+            "max": 633.6
+          },
+          "server_ms": {
+            "min": 620.5,
+            "p50": 629.3,
+            "avg": 628.2,
+            "max": 633.6
+          },
+          "ram": {
+            "idle_rss_mb": null,
+            "peak_engine_rss_mb": null,
+            "after_rss_mb": null,
+            "delta_mb": null,
+            "peak_ephemeral_proc_mb": 83.1,
+            "note": "ephemeral = per-request duckdb CLI or PHP+FFI process"
+          },
+          "result": 4762
+        },
+        "parallel": {
+          "batch_wall_ms": 3056.7,
+          "per_req_wall_ms": {
+            "min": 2816.5,
+            "p50": 2932.7,
+            "avg": 2944.1,
+            "max": 3055.9
+          },
+          "per_req_server_ms": {
+            "min": 2816.5,
+            "p50": 2932.7,
+            "avg": 2944.1,
+            "max": 3055.9
+          },
+          "ram": {
+            "idle_rss_mb": null,
+            "peak_engine_rss_mb": null,
+            "after_rss_mb": null,
+            "delta_mb": null,
+            "peak_sum_ephemeral_rss_mb": 1777.5,
+            "peak_one_ephemeral_rss_mb": 92.8,
+            "note": "engine = long-lived process; ephemeral sum = concurrent child procs"
+          },
+          "errors": 0
+        }
+      },
+      "mariadb": {
+        "serial": {
+          "wall_ms": {
+            "min": 232.5,
+            "p50": 289.4,
+            "avg": 278.3,
+            "max": 291.5
+          },
+          "server_ms": {
+            "min": 170.5,
+            "p50": 170.9,
+            "avg": 171.4,
+            "max": 173.5
+          },
+          "ram": {
+            "idle_rss_mb": 4291.6,
+            "peak_engine_rss_mb": 4292.6,
+            "after_rss_mb": 4291.6,
+            "delta_mb": 1.0,
+            "peak_ephemeral_proc_mb": 28.0,
+            "note": "engine = long-lived sidecar/mysqld"
+          },
+          "result": 4762
+        },
+        "parallel": {
+          "batch_wall_ms": 834.3,
+          "per_req_wall_ms": {
+            "min": 506.2,
+            "p50": 703.3,
+            "avg": 664.9,
+            "max": 774.1
+          },
+          "per_req_server_ms": {
+            "min": 347.9,
+            "p50": 505.6,
+            "avg": 483.5,
+            "max": 591.6
+          },
+          "ram": {
+            "idle_rss_mb": 4291.6,
+            "peak_engine_rss_mb": 4294.7,
+            "after_rss_mb": 4293.6,
+            "delta_mb": 3.1,
+            "peak_sum_ephemeral_rss_mb": null,
+            "peak_one_ephemeral_rss_mb": 28.2,
+            "note": "engine = long-lived process; ephemeral sum = concurrent child procs"
+          },
+          "errors": 0
+        }
+      }
+    },
+    "page_10cols_limit50": {
+      "python_sidecar": {
+        "serial": {
+          "wall_ms": {
+            "min": 594.7,
+            "p50": 601.2,
+            "avg": 601.9,
+            "max": 614.2
+          },
+          "server_ms": {
+            "min": 593.4,
+            "p50": 599.9,
+            "avg": 600.7,
+            "max": 613.1
+          },
+          "ram": {
+            "idle_rss_mb": 684.9,
+            "peak_engine_rss_mb": 703.3,
+            "after_rss_mb": 692.8,
+            "delta_mb": 18.4,
+            "peak_ephemeral_proc_mb": null,
+            "note": "engine = long-lived sidecar/mysqld"
+          },
+          "result": 50
+        },
+        "parallel": {
+          "batch_wall_ms": 2883.1,
+          "per_req_wall_ms": {
+            "min": 1183.6,
+            "p50": 2212.9,
+            "avg": 1951.7,
+            "max": 2857.5
+          },
+          "per_req_server_ms": {
+            "min": 1178.7,
+            "p50": 2204.8,
+            "avg": 1946.6,
+            "max": 2848.2
+          },
+          "ram": {
+            "idle_rss_mb": 692.8,
+            "peak_engine_rss_mb": 867.9,
+            "after_rss_mb": 867.8,
+            "delta_mb": 175.1,
+            "peak_sum_ephemeral_rss_mb": null,
+            "peak_one_ephemeral_rss_mb": null,
+            "note": "engine = long-lived process; ephemeral sum = concurrent child procs"
+          },
+          "errors": 0
+        }
+      },
+      "go_sidecar": {
+        "serial": {
+          "wall_ms": {
+            "min": 2109.7,
+            "p50": 2113.2,
+            "avg": 2125.5,
+            "max": 2164.9
+          },
+          "server_ms": {
+            "min": 2108.8,
+            "p50": 2112.2,
+            "avg": 2124.5,
+            "max": 2164.0
+          },
+          "ram": {
+            "idle_rss_mb": 236.5,
+            "peak_engine_rss_mb": 260.1,
+            "after_rss_mb": 260.1,
+            "delta_mb": 23.5,
+            "peak_ephemeral_proc_mb": null,
+            "note": "engine = long-lived sidecar/mysqld"
+          },
+          "result": 50
+        },
+        "parallel": {
+          "batch_wall_ms": 9643.5,
+          "per_req_wall_ms": {
+            "min": 3650.4,
+            "p50": 7355.0,
+            "avg": 6341.4,
+            "max": 9637.1
+          },
+          "per_req_server_ms": {
+            "min": 3647.8,
+            "p50": 7352.5,
+            "avg": 6339.6,
+            "max": 9635.9
+          },
+          "ram": {
+            "idle_rss_mb": 260.1,
+            "peak_engine_rss_mb": 475.0,
+            "after_rss_mb": 475.0,
+            "delta_mb": 215.0,
+            "peak_sum_ephemeral_rss_mb": null,
+            "peak_one_ephemeral_rss_mb": null,
+            "note": "engine = long-lived process; ephemeral sum = concurrent child procs"
+          },
+          "errors": 0
+        }
+      },
+      "satur.io": {
+        "serial": {
+          "wall_ms": {
+            "min": 674.1,
+            "p50": 682.9,
+            "avg": 681.4,
+            "max": 688.0
+          },
+          "server_ms": {
+            "min": 600.0,
+            "p50": 604.5,
+            "avg": 605.2,
+            "max": 614.5
+          },
+          "ram": {
+            "idle_rss_mb": null,
+            "peak_engine_rss_mb": null,
+            "after_rss_mb": null,
+            "delta_mb": null,
+            "peak_ephemeral_proc_mb": 140.7,
+            "note": "ephemeral = per-request duckdb CLI or PHP+FFI process"
+          },
+          "result": 50
+        },
+        "parallel": {
+          "batch_wall_ms": 3217.7,
+          "per_req_wall_ms": {
+            "min": 1772.4,
+            "p50": 3047.5,
+            "avg": 2979.6,
+            "max": 3157.7
+          },
+          "per_req_server_ms": {
+            "min": 1632.1,
+            "p50": 2868.5,
+            "avg": 2792.9,
+            "max": 2986.8
+          },
+          "ram": {
+            "idle_rss_mb": null,
+            "peak_engine_rss_mb": null,
+            "after_rss_mb": null,
+            "delta_mb": null,
+            "peak_sum_ephemeral_rss_mb": 2362.8,
+            "peak_one_ephemeral_rss_mb": 150.6,
+            "note": "engine = long-lived process; ephemeral sum = concurrent child procs"
+          },
+          "errors": 0
+        }
+      },
+      "duckdb_cli": {
+        "serial": {
+          "wall_ms": {
+            "min": 732.6,
+            "p50": 736.0,
+            "avg": 737.0,
+            "max": 742.2
+          },
+          "server_ms": {
+            "min": 732.6,
+            "p50": 736.0,
+            "avg": 737.0,
+            "max": 742.2
+          },
+          "ram": {
+            "idle_rss_mb": null,
+            "peak_engine_rss_mb": null,
+            "after_rss_mb": null,
+            "delta_mb": null,
+            "peak_ephemeral_proc_mb": 109.3,
+            "note": "ephemeral = per-request duckdb CLI or PHP+FFI process"
+          },
+          "result": 50
+        },
+        "parallel": {
+          "batch_wall_ms": 3457.1,
+          "per_req_wall_ms": {
+            "min": 3189.6,
+            "p50": 3352.1,
+            "avg": 3342.0,
+            "max": 3435.9
+          },
+          "per_req_server_ms": {
+            "min": 3189.6,
+            "p50": 3352.1,
+            "avg": 3342.0,
+            "max": 3435.9
+          },
+          "ram": {
+            "idle_rss_mb": null,
+            "peak_engine_rss_mb": null,
+            "after_rss_mb": null,
+            "delta_mb": null,
+            "peak_sum_ephemeral_rss_mb": 1820.2,
+            "peak_one_ephemeral_rss_mb": 119.1,
+            "note": "engine = long-lived process; ephemeral sum = concurrent child procs"
+          },
+          "errors": 0
+        }
+      },
+      "mariadb": {
+        "serial": {
+          "wall_ms": {
+            "min": 175.4,
+            "p50": 228.3,
+            "avg": 219.2,
+            "max": 237.2
+          },
+          "server_ms": {
+            "min": 117.3,
+            "p50": 118.4,
+            "avg": 118.4,
+            "max": 119.7
+          },
+          "ram": {
+            "idle_rss_mb": 4291.6,
+            "peak_engine_rss_mb": 4292.6,
+            "after_rss_mb": 4292.6,
+            "delta_mb": 1.0,
+            "peak_ephemeral_proc_mb": 28.1,
+            "note": "engine = long-lived sidecar/mysqld"
+          },
+          "result": 50
+        },
+        "parallel": {
+          "batch_wall_ms": 465.3,
+          "per_req_wall_ms": {
+            "min": 248.2,
+            "p50": 332.1,
+            "avg": 335.1,
+            "max": 419.6
+          },
+          "per_req_server_ms": {
+            "min": 126.6,
+            "p50": 164.1,
+            "avg": 172.4,
+            "max": 213.8
+          },
+          "ram": {
+            "idle_rss_mb": 4291.6,
+            "peak_engine_rss_mb": 4293.6,
+            "after_rss_mb": 4292.6,
+            "delta_mb": 2.0,
+            "peak_sum_ephemeral_rss_mb": null,
+            "peak_one_ephemeral_rss_mb": 28.0,
+            "note": "engine = long-lived process; ephemeral sum = concurrent child procs"
+          },
+          "errors": 0
+        }
+      }
+    }
+  },
+  "ranking": {
+    "count_serial_p50_ms": {
+      "python_sidecar": 491.6,
+      "go_sidecar": 859.3,
+      "satur.io": 631.0,
+      "duckdb_cli": 629.3,
+      "mariadb": 289.4
+    },
+    "count_parallel20_batch_ms": {
+      "python_sidecar": 2314.3,
+      "go_sidecar": 4002.9,
+      "satur.io": 3054.6,
+      "duckdb_cli": 3056.7,
+      "mariadb": 834.3
+    },
+    "count_serial_peak_rss_mb": {
+      "python_sidecar": 571.2,
+      "go_sidecar": 369.7,
+      "satur.io": 114.8,
+      "duckdb_cli": 83.1,
+      "mariadb": 4292.6
+    },
+    "count_parallel20_peak_rss_mb": {
+      "python_sidecar": 705.9,
+      "go_sidecar": 395.6,
+      "satur.io": 2160.9,
+      "duckdb_cli": 1777.5,
+      "mariadb": 4294.7
+    },
+    "page_serial_p50_ms": {
+      "python_sidecar": 601.2,
+      "go_sidecar": 2113.2,
+      "satur.io": 682.9,
+      "duckdb_cli": 736.0,
+      "mariadb": 228.3
+    },
+    "page_parallel20_peak_rss_mb": {
+      "python_sidecar": 867.9,
+      "go_sidecar": 475.0,
+      "satur.io": 2362.8,
+      "duckdb_cli": 1820.2,
+      "mariadb": 4293.6
+    },
+    "lowest_ram_parallel_count": "go_sidecar",
+    "fastest_serial_count": "mariadb"
+  }
+}

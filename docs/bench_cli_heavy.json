@@ -1,0 +1,13 @@
+{
+  "driver": "duckdb_cli",
+  "parallel": 4,
+  "batch_wall_ms": 35837.2,
+  "per_query_wall_ms": {
+    "min": 34167.4,
+    "p50": 35726.8,
+    "max": 35824.5,
+    "avg": 35014.3
+  },
+  "peak_sum_rss_mb": 9473.6,
+  "bytes_sample": 997302259
+}

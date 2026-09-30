@@ -1,0 +1,48 @@
+{
+  "dataset": "5cr lake",
+  "threads": 4,
+  "queries": {
+    "count_account_83": {
+      "ms_min": 17.2,
+      "ms_med": 17.7,
+      "ms_max": 17.8,
+      "result": 500000
+    },
+    "count_segment": {
+      "ms_min": 116.0,
+      "ms_med": 117.3,
+      "ms_max": 138.7,
+      "result": 7143
+    },
+    "select_star_account_limit50": {
+      "ms_min": 24.3,
+      "ms_med": 25.1,
+      "ms_max": 27.8,
+      "result": 50
+    },
+    "select_star_account_limit1000": {
+      "ms_min": 45.7,
+      "ms_med": 45.9,
+      "ms_max": 46.9,
+      "result": 1000
+    },
+    "select_star_segment_all_7143": {
+      "ms_min": 1789.5,
+      "ms_med": 1936.1,
+      "ms_max": 1947.4,
+      "result": 7143
+    },
+    "select_star_account_all_500k": {
+      "ms_min": 6695.0,
+      "ms_med": 6835.4,
+      "ms_max": 6941.7,
+      "result": 500000
+    },
+    "proj_few_cols_account_limit50": {
+      "ms_min": 15.2,
+      "ms_med": 15.3,
+      "ms_max": 15.6,
+      "result": 50
+    }
+  }
+}

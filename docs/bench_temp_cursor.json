@@ -1,0 +1,103 @@
+{
+  "dataset": "temp-cursor parquet_contacts_5cr",
+  "glob": "/Users/lumegalabs/Downloads/temp-cursor/segmentation-poc/data/parquet_contacts_5cr/contact/**/*.parquet",
+  "claimed_rows": 50000000,
+  "machine_note": "local mac, DuckDB CLI, threads=4, cold/warm mixed (3 runs)",
+  "queries": [
+    {
+      "label": "schema_sample",
+      "ms_runs": [
+        98.3,
+        39.5,
+        38.7
+      ],
+      "ms_min": 38.7,
+      "ms_median": 39.5,
+      "ms_max": 98.3,
+      "result_preview": "[{\"id\":\"1\",\"account_id\":1,\"primary_key\":\"pk-0\",\"email\":\"user0@example.com\",\"mobile\":\"+919800000000\",\"first_name\":\"First0\",\"last_name\":\"Last0\",\"created_at\":1700000000,\"updated_at\":1700000000,\"subscribed_on\":1700000000,\"last_emailed\":0,\"last_sms\":0,\"is_opened\":0,\"is_clicked\":0,\"last_opened\":0,\"last_clicked\":0,\"campaign_sent_cnt\":0,\"campaign_opened_cnt\":0,\"campaign_clicked_cnt\":0,\"sms_campaign_sent_cnt\":0,\"email_status\":0,\"email_suppressed_on\":0,\"sms_status\":0,\"sms_suppressed_on\":0,\"is_deleted\":0,\""
+    },
+    {
+      "label": "count_all",
+      "ms_runs": [
+        29.8,
+        29.5
+      ],
+      "ms_min": 29.5,
+      "ms_median": 29.7,
+      "ms_max": 29.8,
+      "result_preview": "[{\"cnt\":50000000}]"
+    },
+    {
+      "label": "count_account_83",
+      "ms_runs": [
+        50.5,
+        37.9,
+        36.5
+      ],
+      "ms_min": 36.5,
+      "ms_median": 37.9,
+      "ms_max": 50.5,
+      "result_preview": "[{\"cnt\":500000}]"
+    },
+    {
+      "label": "segment_verified",
+      "ms_runs": [
+        185.7,
+        151.5,
+        151.5
+      ],
+      "ms_min": 151.5,
+      "ms_median": 151.5,
+      "ms_max": 185.7,
+      "result_preview": "[{\"cnt\":7143}]"
+    },
+    {
+      "label": "page_keyset_50",
+      "ms_runs": [
+        35.0,
+        29.4,
+        29.3
+      ],
+      "ms_min": 29.3,
+      "ms_median": 29.4,
+      "ms_max": 35.0,
+      "result_preview": "[{\"id\":\"83\",\"email\":\"user82@example.com\",\"account_id\":83,\"email_status\":5,\"f6\":\"f6-82\"},\n{\"id\":\"183\",\"email\":\"user182@example.com\",\"account_id\":83,\"email_status\":0,\"f6\":\"f6-182\"},\n{\"id\":\"283\",\"email\":\"user282@example.com\",\"account_id\":83,\"email_status\":2,\"f6\":\"f6-282\"},\n{\"id\":\"383\",\"email\":\"user382@example.com\",\"account_id\":83,\"email_status\":4,\"f6\":\"f6-382\"},\n{\"id\":\"483\",\"email\":\"user482@example.com\",\"account_id\":83,\"email_status\":6,\"f6\":\"f6-482\"},\n{\"id\":\"583\",\"email\":\"user582@example.com\",\"acco"
+    },
+    {
+      "label": "page_after_id",
+      "ms_runs": [
+        28.7,
+        29.7,
+        28.5
+      ],
+      "ms_min": 28.5,
+      "ms_median": 28.7,
+      "ms_max": 29.7,
+      "result_preview": "[{\"id\":\"100083\",\"email\":\"user100082@example.com\",\"account_id\":83},\n{\"id\":\"100183\",\"email\":\"user100182@example.com\",\"account_id\":83},\n{\"id\":\"100283\",\"email\":\"user100282@example.com\",\"account_id\":83},\n{\"id\":\"100383\",\"email\":\"user100382@example.com\",\"account_id\":83},\n{\"id\":\"100483\",\"email\":\"user100482@example.com\",\"account_id\":83},\n{\"id\":\"100583\",\"email\":\"user100582@example.com\",\"account_id\":83},\n{\"id\":\"100683\",\"email\":\"user100682@example.com\",\"account_id\":83},\n{\"id\":\"100783\",\"email\":\"user100782@ex"
+    },
+    {
+      "label": "distinct_accounts",
+      "ms_runs": [
+        62.0,
+        57.7,
+        56.0
+      ],
+      "ms_min": 56.0,
+      "ms_median": 57.7,
+      "ms_max": 62.0,
+      "result_preview": "[{\"accounts\":100}]"
+    },
+    {
+      "label": "column_proj_count",
+      "ms_runs": [
+        222.0,
+        187.4,
+        186.6
+      ],
+      "ms_min": 186.6,
+      "ms_median": 187.4,
+      "ms_max": 222.0,
+      "result_preview": "[{\"cnt\":500000}]"
+    }
+  ]
+}

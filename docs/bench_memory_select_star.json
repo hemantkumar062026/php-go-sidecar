@@ -1,0 +1,37 @@
+{
+  "query": "COPY (SELECT * FROM lake) \u2014 NO WHERE, all 50M rows \u00d7 43 cols",
+  "parallel": 4,
+  "note": "20-way full SELECT* would thrash machine; used N parallel full-table COPY. Returning SELECT* as JSON\u00d7N is not viable.",
+  "python_sidecar": {
+    "idle_rss_mb": 715.1,
+    "peak_rss_mb": 2700.5,
+    "after_rss_mb": 2700.5,
+    "delta_mb": 1985.4,
+    "batch_wall_ms": 65726.0,
+    "per_query_server_ms": {
+      "min": 16260.7,
+      "p50": 49118.5,
+      "max": 65716.4,
+      "avg": 40929.4
+    },
+    "errors": 0
+  },
+  "saturo": {
+    "peak_sum_rss_mb": 9889.6,
+    "batch_wall_ms": 35344.2,
+    "per_query_server_ms": {
+      "min": 32823.8,
+      "p50": 35075.4,
+      "max": 35116.0,
+      "avg": 34515.8
+    },
+    "errors": 0
+  },
+  "comparison": {
+    "sidecar_peak_mb": 2700.5,
+    "saturo_peak_mb": 9889.6,
+    "ram_winner": "sidecar",
+    "saturo_over_sidecar_x": 3.66,
+    "batch_wall_winner": "saturo"
+  }
+}

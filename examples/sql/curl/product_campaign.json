@@ -1,0 +1,49 @@
+{
+  "account_id": 1133,
+  "mode": "both",
+  "dialect": "duckdb",
+  "parquet_path": "/Users/lumegalabs/Projects/php-parquet-duckdb/data/dummy",
+  "kind": "campaign",
+  "filter": [
+    [
+      { "type": "status", "operator": "status_active", "options": ["email"] },
+      { "type": "segments", "operator": "in_any_segments", "options": [532, 488] },
+      { "type": "segments", "operator": "out_of_any_segments", "options": [488, 533] },
+      { "type": "block_files", "operator": "out_of_any_blockfiles", "options": [57] },
+      { "type": "stats", "operator": "stats_email_campaigns_not_sent", "options": [2, "days"] }
+    ],
+    [
+      { "type": "status", "operator": "status_active", "options": ["email"] },
+      { "type": "block_files", "operator": "in_blockfiles", "options": [56] },
+      { "type": "segments", "operator": "out_of_any_segments", "options": [488, 533] },
+      { "type": "block_files", "operator": "out_of_any_blockfiles", "options": [57] },
+      { "type": "stats", "operator": "stats_email_campaigns_not_sent", "options": [2, "days"] }
+    ]
+  ],
+  "segment_defs": {
+    "532": [
+      [
+        { "type": "attributes", "operator": "text_attr_equals", "options": ["f30", "Mastercard"] },
+        { "type": "attributes", "operator": "number_attr_equals", "options": ["f31", "50"] },
+        { "type": "attributes", "operator": "text_attr_equals", "options": ["f18", "Delhi"] }
+      ]
+    ],
+    "488": [
+      [
+        { "type": "attributes", "operator": "text_attr_equals", "options": ["f30", "Mastercard"] },
+        { "type": "attributes", "operator": "number_attr_gt", "options": ["f31", "51"] }
+      ]
+    ],
+    "533": [
+      [
+        { "type": "attributes", "operator": "text_attr_equals", "options": ["f30", "Mastercard"] },
+        { "type": "attributes", "operator": "number_attr_equals", "options": ["f31", "50"] },
+        { "type": "attributes", "operator": "text_attr_equals", "options": ["f18", "Delhi"] },
+        { "type": "attributes", "operator": "text_attr_equals", "options": ["f6", "ICICI"] }
+      ]
+    ]
+  },
+  "select": ["id", "email", "f2", "f6", "f18", "f30", "f31", "email_status"],
+  "limit": 20,
+  "order_by": "id"
+}

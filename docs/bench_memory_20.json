@@ -1,0 +1,26 @@
+{
+  "query": "5cr segment count (7143)",
+  "parallel": 20,
+  "python_sidecar": {
+    "pid": 32088,
+    "idle_rss_mb": 701.0,
+    "after_warm_rss_mb": 701.1,
+    "peak_rss_mb_during_20": 715.6,
+    "after_batch_rss_mb": 715.1,
+    "delta_peak_vs_idle_mb": 14.6,
+    "batch_wall_ms": 1055.7,
+    "pool_size": 20,
+    "memory_limit_per_conn": "2GB"
+  },
+  "saturo_20_php_processes": {
+    "peak_sum_rss_mb": 1457.5,
+    "batch_wall_ms": 1201.9,
+    "note": "sum of RSS of 20 concurrent php processes (each opens own DuckDB)"
+  },
+  "comparison": {
+    "sidecar_peak_mb": 715.6,
+    "saturo_peak_sum_mb": 1457.5,
+    "lower_peak_ram": "sidecar",
+    "sidecar_vs_saturo_ratio": 2.04
+  }
+}
