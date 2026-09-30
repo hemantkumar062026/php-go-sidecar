@@ -1,10 +1,13 @@
 {
+  "binary": "/opt/homebrew/bin/duckdb",
+  "parquetPath": "/Users/lumegalabs/Projects/php-parquet-duckdb/data/dummy",
+  "threads": 2,
+  "memoryLimit": "512MB",
   "account_id": 1133,
+  "kind": "campaign",
   "mode": "both",
   "dialect": "duckdb",
-  "parquet_path": "/Users/lumegalabs/Projects/php-parquet-duckdb/data/dummy",
-  "kind": "campaign",
-  "filter": [
+  "campaign": [
     [
       { "type": "status", "operator": "status_active", "options": ["email"] },
       { "type": "segments", "operator": "in_any_segments", "options": [532, 488] },

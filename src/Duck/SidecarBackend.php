@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Duck;
 
-/** HTTP client for the official Python DuckDB sidecar. */
+/** HTTP client for the DuckDB sidecar (Python or Go). */
 final class SidecarBackend
 {
     private readonly string $baseUrl;
@@ -14,10 +14,13 @@ final class SidecarBackend
         $this->baseUrl = rtrim($baseUrl, '/');
     }
 
-    /** @return list<array<string, mixed>> */
-    public function query(string $sql): array
+    /**
+     * @param array{threads?:int,memory_limit?:string} $opts
+     * @return list<array<string, mixed>>
+     */
+    public function query(string $sql, array $opts = []): array
     {
-        $payload = $this->post('/query', ['sql' => $sql]);
+        $payload = $this->post('/query', $this->payload($sql, $opts));
         $rows = $payload['rows'] ?? [];
         if (!is_array($rows)) {
             throw new \RuntimeException('Sidecar returned invalid rows');
@@ -26,9 +29,26 @@ final class SidecarBackend
         return $rows;
     }
 
-    public function exec(string $sql): void
+    /** @param array{threads?:int,memory_limit?:string} $opts */
+    public function exec(string $sql, array $opts = []): void
     {
-        $this->post('/exec', ['sql' => $sql]);
+        $this->post('/exec', $this->payload($sql, $opts));
+    }
+
+    /**
+     * @param array{threads?:int,memory_limit?:string} $opts
+     * @return array<string, mixed>
+     */
+    private function payload(string $sql, array $opts): array
+    {
+        $body = ['sql' => $sql];
+        if (isset($opts['threads'])) {
+            $body['threads'] = (int) $opts['threads'];
+        }
+        if (isset($opts['memory_limit']) && $opts['memory_limit'] !== '') {
+            $body['memory_limit'] = (string) $opts['memory_limit'];
+        }
+        return $body;
     }
 
     /** @param array<string, mixed> $body
@@ -49,7 +69,7 @@ final class SidecarBackend
         ]);
         $raw = file_get_contents($url, false, $ctx);
         if ($raw === false) {
-            throw new \RuntimeException('DuckDB sidecar unreachable at ' . $url . '. Start it with: ./bin/sidecar');
+            throw new \RuntimeException('DuckDB sidecar unreachable at ' . $url . '. Start it with: ./bin/go-sidecar');
         }
         $status = 0;
         if (isset($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $m)) {

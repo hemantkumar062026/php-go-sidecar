@@ -22,6 +22,9 @@ final class Session
 
     private readonly SidecarBackend|CliBackend|\PDO $backend;
 
+    /** @var array{threads?:int,memory_limit?:string} */
+    private array $queryOpts = [];
+
     public function __construct(?string $duckdbBin = null)
     {
         $sidecar = getenv('DUCKDB_SIDECAR_URL') ?: '';
@@ -34,6 +37,17 @@ final class Session
             return;
         }
         $this->backend = new CliBackend($duckdbBin ?? (getenv('DUCKDB_BIN') ?: 'duckdb'));
+    }
+
+    /**
+     * Per-request DuckDB settings (same connection for Go sidecar).
+     *
+     * @param array{threads?:int,memory_limit?:string} $opts
+     */
+    public function withOptions(array $opts): self
+    {
+        $this->queryOpts = $opts;
+        return $this;
     }
 
     public static function driver(): string
@@ -74,7 +88,6 @@ final class Session
                 return self::$sidecarKind = 'python';
             }
         }
-        // Fallback by common ports used in this repo
         if (str_contains($base, ':8091')) {
             return self::$sidecarKind = 'go';
         }
@@ -89,8 +102,11 @@ final class Session
     /** @return list<array<string, mixed>> */
     public function query(string $sql): array
     {
-        if ($this->backend instanceof SidecarBackend || $this->backend instanceof CliBackend) {
-            return $this->backend->query($sql);
+        if ($this->backend instanceof SidecarBackend) {
+            return $this->backend->query($sql, $this->queryOpts);
+        }
+        if ($this->backend instanceof CliBackend) {
+            return $this->backend->query($this->wrapCliSql($sql));
         }
 
         [$setup, $select] = self::splitSetupAndSelect($sql);
@@ -109,8 +125,12 @@ final class Session
 
     public function exec(string $sql): void
     {
-        if ($this->backend instanceof SidecarBackend || $this->backend instanceof CliBackend) {
-            $this->backend->exec($sql);
+        if ($this->backend instanceof SidecarBackend) {
+            $this->backend->exec($sql, $this->queryOpts);
+            return;
+        }
+        if ($this->backend instanceof CliBackend) {
+            $this->backend->exec($this->wrapCliSql($sql));
             return;
         }
         $body = rtrim($sql);
@@ -124,6 +144,18 @@ final class Session
             $err = $this->backend->errorInfo();
             throw new \RuntimeException('DuckDB exec failed: ' . ($err[2] ?? 'unknown'));
         }
+    }
+
+    private function wrapCliSql(string $sql): string
+    {
+        $prefix = '';
+        if (isset($this->queryOpts['threads'])) {
+            $prefix .= 'SET threads=' . (int) $this->queryOpts['threads'] . ";\n";
+        }
+        if (isset($this->queryOpts['memory_limit']) && $this->queryOpts['memory_limit'] !== '') {
+            $prefix .= 'SET memory_limit=' . self::quote((string) $this->queryOpts['memory_limit']) . ";\n";
+        }
+        return $prefix . $sql;
     }
 
     private static function pdo(): \PDO

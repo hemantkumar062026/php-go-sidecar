@@ -6,6 +6,7 @@ namespace App\Api;
 
 use App\Bulk\Importer;
 use App\Compact\Service as CompactService;
+use App\Config\DuckdbConfig;
 use App\Duck\Session;
 use App\Filter\QueryParser;
 use App\Pipeline\Service as Pipeline;
@@ -22,6 +23,7 @@ final class Http
     private Importer $bulk;
     private CompactService $compact;
     private Pipeline $pipeline;
+    private DuckdbConfig $duckCfg;
 
     public function __construct()
     {
@@ -32,6 +34,7 @@ final class Http
         $this->bulk = new Importer($this->wh, $locks);
         $this->compact = new CompactService($this->wh, $locks);
         $this->pipeline = new Pipeline($this->wh, $locks, $this->store);
+        $this->duckCfg = new DuckdbConfig($this->wh->root . '/.duckdb_config.json');
     }
 
     public function handle(): void
@@ -82,21 +85,68 @@ final class Http
             ]);
             return;
         }
+        // DuckDB runtime config (binary / parquetPath / threads / memoryLimit)
+        if ($method === 'GET' && $path === '/api/sftp/config') {
+            $this->json(200, [
+                'ok' => true,
+                'config' => $this->duckCfg->get(),
+            ]);
+            return;
+        }
+        if (($method === 'POST' || $method === 'PUT') && $path === '/api/sftp/config') {
+            $body = $this->body();
+            $replace = (bool) ($body['replace'] ?? false);
+            $cfg = $this->duckCfg->set($body, $replace);
+            $this->json(200, [
+                'ok' => true,
+                'config' => $cfg,
+            ]);
+            return;
+        }
+        if ($method === 'DELETE' && $path === '/api/sftp/config') {
+            $this->json(200, [
+                'ok' => true,
+                'config' => $this->duckCfg->reset(),
+            ]);
+            return;
+        }
         // Parse values → SQL only (no execute)
         if ($method === 'POST' && $path === '/api/sftp/parse') {
-            $parsed = QueryParser::parse($this->sftpParseInput($this->body()));
-            $this->json(200, $parsed);
+            $body = $this->body();
+            $cfg = $this->duckCfg->resolve($body);
+            $parsed = QueryParser::parse($this->sftpParseInput($body, $cfg));
+            $this->json(200, ['duckdb' => $cfg, 'parsed' => $parsed]);
             return;
         }
         // Parse + execute via DuckDB sidecar (point DUCKDB_SIDECAR_URL at Go :8091)
         if ($method === 'POST' && $path === '/api/sftp/query') {
             $body = $this->body();
             $mode = strtolower((string) ($body['mode'] ?? 'count'));
-            $parsed = QueryParser::parse($this->sftpParseInput($body));
-            $duck = new Session();
+            $cfg = $this->duckCfg->resolve($body);
+            $input = $this->sftpParseInput($body, $cfg);
+            $parsed = QueryParser::parse($input);
+            $bin = (string) ($cfg['binary'] ?? '');
+            $duck = new Session($bin !== '' ? $bin : null);
+            $opts = [];
+            if ($cfg['threads'] !== null) {
+                $opts['threads'] = (int) $cfg['threads'];
+            }
+            if ($cfg['memoryLimit'] !== null && $cfg['memoryLimit'] !== '') {
+                $opts['memory_limit'] = (string) $cfg['memoryLimit'];
+            }
+            if ($opts !== []) {
+                $duck->withOptions($opts);
+            }
             $out = [
                 'driver' => Session::driver(),
                 'sidecar' => getenv('DUCKDB_SIDECAR_URL') ?: null,
+                'kind' => $input['kind'] ?? null,
+                'duckdb' => [
+                    'binary' => $cfg['binary'],
+                    'parquetPath' => $cfg['parquetPath'],
+                    'threads' => $cfg['threads'],
+                    'memoryLimit' => $cfg['memoryLimit'],
+                ],
                 'parsed' => $parsed,
             ];
             if ($mode === 'count' || $mode === 'both') {
@@ -429,21 +479,35 @@ final class Http
     private function cors(): void
     {
         header('Access-Control-Allow-Origin: *');
-        header('Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS');
+        header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
         header('Access-Control-Allow-Headers: Accept, Authorization, Content-Type');
     }
 
     /**
+     * Query body focuses on filters; DuckDB settings come from /api/sftp/config
+     * (request may still override a single call).
+     *
      * @param array<string, mixed> $body
+     * @param array{binary:?string,parquetPath:?string,threads:?int,memoryLimit:?string}|null $cfg
      * @return array<string, mixed>
      */
-    private function sftpParseInput(array $body): array
+    private function sftpParseInput(array $body, ?array $cfg = null): array
     {
+        $cfg ??= $this->duckCfg->resolve($body);
         $accountId = (int) ($body['account_id'] ?? 0);
         $dialect = strtolower((string) ($body['dialect'] ?? 'duckdb'));
+        $kind = strtolower(trim((string) ($body['kind'] ?? '')));
+        if ($kind === '' && isset($body['campaign'])) {
+            $kind = 'campaign';
+        }
+        if ($kind === '' && isset($body['segment'])) {
+            $kind = 'segment';
+        }
+
         $input = [
             'account_id' => $accountId,
             'dialect' => $dialect,
+            'kind' => $kind !== '' ? $kind : null,
             'select' => $body['select'] ?? null,
             'limit' => $body['limit'] ?? 50,
             'offset' => $body['offset'] ?? 0,
@@ -451,35 +515,37 @@ final class Http
             'order_dir' => $body['order_dir'] ?? 'ASC',
             'include_deleted' => (bool) ($body['include_deleted'] ?? false),
         ];
-        if (isset($body['filter']) && is_array($body['filter'])) {
+
+        if ($kind === 'campaign' && isset($body['campaign']) && is_array($body['campaign'])) {
+            $input['filter'] = $body['campaign'];
+        } elseif (($kind === 'segment' || $kind === '') && isset($body['segment']) && is_array($body['segment'])) {
+            $input['filter'] = $body['segment'];
+        } elseif (isset($body['filter']) && is_array($body['filter'])) {
             $input['filter'] = $body['filter'];
         } elseif (isset($body['values']) && is_array($body['values'])) {
             $input['values'] = $body['values'];
         } else {
             $input['values'] = [];
         }
+
         if (isset($body['segment_defs']) && is_array($body['segment_defs'])) {
             $input['segment_defs'] = $body['segment_defs'];
         }
         if (isset($body['block_match_field'])) {
             $input['block_match_field'] = (string) $body['block_match_field'];
         }
+
         if ($dialect === 'duckdb') {
             $repoRoot = dirname(__DIR__, 2);
-            $parquetPath = (string) (
-                $body['parquet_path']
-                ?? $body['parquetPath']
-                ?? ($body['duckdb']['parquetPath'] ?? null)
-                ?? ($body['duckdb']['parquet_path'] ?? null)
-                ?? getenv('PARQUET_PATH')
-                ?: ''
-            );
-            $glob = (string) ($body['lake_glob'] ?? getenv('LAKE_GLOB') ?: '');
-            if ($glob === '' && $parquetPath !== '') {
-                $glob = rtrim($parquetPath, '/') . '/contact/**/*.parquet';
+            $parquetPath = (string) ($cfg['parquetPath'] ?? '');
+            if ($parquetPath === '') {
+                $parquetPath = $repoRoot . '/data/dummy';
             }
+            $input['parquet_path'] = $parquetPath;
+
+            $glob = (string) ($body['lake_glob'] ?? getenv('LAKE_GLOB') ?: '');
             if ($glob === '') {
-                $glob = $repoRoot . '/data/dummy/contact/**/*.parquet';
+                $glob = rtrim($parquetPath, '/') . '/contact/**/*.parquet';
             }
             $input['from'] = "read_parquet('" . str_replace("'", "''", $glob)
                 . "', hive_partitioning=true, union_by_name=true)";
@@ -489,11 +555,8 @@ final class Http
                 ?? getenv('BLOCK_FILE_GLOB')
                 ?: ''
             );
-            if ($blockGlob === '' && $parquetPath !== '') {
-                $blockGlob = rtrim($parquetPath, '/') . '/block_file_data/*.parquet';
-            }
             if ($blockGlob === '') {
-                $blockGlob = $repoRoot . '/data/dummy/block_file_data/*.parquet';
+                $blockGlob = rtrim($parquetPath, '/') . '/block_file_data/*.parquet';
             }
             $input['block_file_glob'] = $blockGlob;
         } elseif (isset($body['schema'])) {

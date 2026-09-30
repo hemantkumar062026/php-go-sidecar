@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	_ "github.com/duckdb/duckdb-go/v2"
@@ -50,7 +51,24 @@ func (p *pool) available() int { return len(p.ch) }
 func (p *pool) size() int      { return cap(p.ch) }
 
 type reqBody struct {
-	SQL string `json:"sql"`
+	SQL          string `json:"sql"`
+	Threads      *int   `json:"threads"`
+	MemoryLimit  string `json:"memory_limit"`
+}
+
+func applySessionSettings(db *sql.DB, body reqBody) error {
+	if body.Threads != nil {
+		if _, err := db.Exec(fmt.Sprintf("SET threads=%d", *body.Threads)); err != nil {
+			return err
+		}
+	}
+	if body.MemoryLimit != "" {
+		mem := strings.ReplaceAll(body.MemoryLimit, "'", "''")
+		if _, err := db.Exec(fmt.Sprintf("SET memory_limit='%s'", mem)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func main() {
@@ -95,6 +113,9 @@ func main() {
 		t0 := time.Now()
 		var rows []map[string]any
 		err := p.withDB(func(db *sql.DB) error {
+			if err := applySessionSettings(db, body); err != nil {
+				return err
+			}
 			rs, err := db.Query(body.SQL)
 			if err != nil {
 				return err
@@ -146,6 +167,9 @@ func main() {
 		}
 		t0 := time.Now()
 		err := p.withDB(func(db *sql.DB) error {
+			if err := applySessionSettings(db, body); err != nil {
+				return err
+			}
 			_, err := db.Exec(body.SQL)
 			return err
 		})
