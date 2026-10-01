@@ -104,9 +104,12 @@ final class CampaignPreview
         $sqlMap['include_base'] = self::distinctCountSql($baseInput, $includeBaseGroups, $segmentDefs);
         $sqlMap['final_target'] = self::distinctCountSql($baseInput, $campaign, $segmentDefs);
 
+        $parallel = self::boolFlag($body['parallel'] ?? false);
+        $rowSets = $duck->queryMany($sqlMap, $parallel);
+
         $metrics = [];
         foreach ($sqlMap as $name => $sql) {
-            $rows = $duck->query($sql);
+            $rows = $rowSets[$name] ?? [];
             $metrics[$name] = (int) ($rows[0]['cnt'] ?? 0);
         }
 
@@ -136,6 +139,7 @@ final class CampaignPreview
             'campaign' => $campaign,
             'metrics' => $metrics,
             'sql' => $sqlMap,
+            'parallel' => $parallel,
         ];
     }
 
@@ -298,5 +302,20 @@ final class CampaignPreview
             }
         }
         return array_values(array_unique($out));
+    }
+
+    private static function boolFlag(mixed $raw): bool
+    {
+        if (is_bool($raw)) {
+            return $raw;
+        }
+        if (is_int($raw) || is_float($raw)) {
+            return ((int) $raw) !== 0;
+        }
+        if (is_string($raw)) {
+            $v = strtolower(trim($raw));
+            return in_array($v, ['1', 'true', 'yes', 'on'], true);
+        }
+        return false;
     }
 }

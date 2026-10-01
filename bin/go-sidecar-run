@@ -3,11 +3,12 @@ set -eu
 cd "$(dirname "$0")/../sidecar/go"
 export SIDECAR_HOST="${SIDECAR_HOST:-127.0.0.1}"
 export SIDECAR_PORT="${SIDECAR_PORT:-8091}"
-export DUCKDB_THREADS="${DUCKDB_THREADS:-2}"
+# Tuned for campaign-preview parallel fan-out + multi-client stress on ~12-core hosts.
+export DUCKDB_THREADS="${DUCKDB_THREADS:-4}"
 export DUCKDB_POOL_SIZE="${DUCKDB_POOL_SIZE:-8}"
-export DUCKDB_MEMORY_LIMIT="${DUCKDB_MEMORY_LIMIT:-4GB}"
+export DUCKDB_MEMORY_LIMIT="${DUCKDB_MEMORY_LIMIT:-2GB}"
 echo "Building Go DuckDB sidecar…"
 go mod tidy
 go build -o ../../bin/go-sidecar .
-echo "Starting Go DuckDB sidecar on ${SIDECAR_HOST}:${SIDECAR_PORT}…"
+echo "Starting Go DuckDB sidecar on ${SIDECAR_HOST}:${SIDECAR_PORT} (pool=${DUCKDB_POOL_SIZE} threads=${DUCKDB_THREADS} mem=${DUCKDB_MEMORY_LIMIT})…"
 exec ../../bin/go-sidecar

@@ -123,6 +123,28 @@ final class Session
         return $rows;
     }
 
+    /**
+     * Run named SQL statements. When $parallel and sidecar: concurrent curl_multi.
+     * Otherwise sequential (CLI / PDO / parallel=false).
+     *
+     * @param array<string, string> $namedSql
+     * @return array<string, list<array<string, mixed>>>
+     */
+    public function queryMany(array $namedSql, bool $parallel = false): array
+    {
+        if ($namedSql === []) {
+            return [];
+        }
+        if ($parallel && $this->backend instanceof SidecarBackend) {
+            return $this->backend->queryMany($namedSql, $this->queryOpts);
+        }
+        $out = [];
+        foreach ($namedSql as $name => $sql) {
+            $out[$name] = $this->query($sql);
+        }
+        return $out;
+    }
+
     public function exec(string $sql): void
     {
         if ($this->backend instanceof SidecarBackend) {

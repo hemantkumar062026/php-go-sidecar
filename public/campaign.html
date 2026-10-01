@@ -185,6 +185,13 @@
           <option value="">Loading…</option>
         </select>
       </div>
+      <div>
+        <label for="parallel_flag">Query mode</label>
+        <label style="display:flex;align-items:center;gap:0.45rem;font-weight:500;min-height:38px">
+          <input id="parallel_flag" type="checkbox" style="min-width:auto;width:auto" />
+          Parallel counts
+        </label>
+      </div>
       <button type="button" id="reload" class="ghost">Reload campaigns</button>
     </div>
 
@@ -290,6 +297,31 @@
   <script>
     const $ = (id) => document.getElementById(id);
     const fmt = (n) => (n == null || n === '—' ? '—' : Number(n).toLocaleString('en-IN'));
+
+    /** Parse JSON even if PHP warnings were prepended to the body. */
+    async function fetchJson(url, opts) {
+      const res = await fetch(url, opts);
+      const text = await res.text();
+      const objAt = text.indexOf('{');
+      const arrAt = text.indexOf('[');
+      let start = -1;
+      if (objAt >= 0 && arrAt >= 0) start = Math.min(objAt, arrAt);
+      else start = Math.max(objAt, arrAt);
+      const payload = start >= 0 ? text.slice(start) : text;
+      let data;
+      try {
+        data = JSON.parse(payload);
+      } catch (e) {
+        throw new Error('Invalid JSON from ' + url + ': ' + text.slice(0, 180));
+      }
+      if (!res.ok) {
+        throw new Error(data.error || data.message || ('HTTP ' + res.status));
+      }
+      if (data && data.error && data.ok === false) {
+        throw new Error(data.error);
+      }
+      return data;
+    }
 
     // Audience rules tied to campaign segment_id (no block_table)
     const SEGMENT_DEFS_DEFAULT = {
@@ -694,13 +726,11 @@
         segment_id: $('edit_segment').value.trim(),
       };
       try {
-        const res = await fetch('/api/campaigns/' + camp.id, {
+        const data = await fetchJson('/api/campaigns/' + camp.id, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
           body: JSON.stringify(body),
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || JSON.stringify(data));
         readAudienceFromForm(camp);
         const idx = campaigns.findIndex((c) => Number(c.id) === Number(camp.id));
         if (idx >= 0) campaigns[idx] = data;
@@ -748,8 +778,7 @@
     }
 
     async function ensureDemoCampaigns(accountId) {
-      const res = await fetch('/api/campaigns?account_id=' + accountId);
-      let list = await res.json();
+      let list = await fetchJson('/api/campaigns?account_id=' + accountId);
       if (!Array.isArray(list)) list = [];
       if (list.length > 0) return list;
       const demos = [
@@ -758,7 +787,7 @@
         { name: 'Age 51+ Mastercard OR Block 56', segment_id: '532,488' },
       ];
       for (const d of demos) {
-        await fetch('/api/campaigns', {
+        await fetchJson('/api/campaigns', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -769,8 +798,7 @@
           }),
         });
       }
-      const res2 = await fetch('/api/campaigns?account_id=' + accountId);
-      list = await res2.json();
+      list = await fetchJson('/api/campaigns?account_id=' + accountId);
       return Array.isArray(list) ? list : [];
     }
 
@@ -781,8 +809,7 @@
       const rowsEl = $('lake_rows');
       if (!el) return;
       try {
-        const res = await fetch('/api/sftp/config');
-        const data = await res.json();
+        const data = await fetchJson('/api/sftp/config');
         const path = data?.config?.parquetPath || '(not set)';
         const ds = data?.dataSource || {};
         el.textContent = path;
@@ -795,7 +822,10 @@
           }
           rowsEl.textContent = r;
         }
-        if (String(path).includes('/data/dummy') && !String(path).includes('dummy_1cr') && !String(path).includes('dummy_base_delta')) {
+        if (data?.sidecar_ok === false) {
+          el.style.color = 'var(--warn)';
+          el.title = 'DuckDB sidecar is down — counts unavailable until it is started';
+        } else if (String(path).includes('/data/dummy') && !String(path).includes('dummy_1cr') && !String(path).includes('dummy_base_delta')) {
           el.style.color = 'var(--warn)';
           el.title = 'Tiny demo lake — pick Flat hive (1 crore) or Base + deltas for larger counts';
         } else {
@@ -826,8 +856,7 @@
       const sizesBox = $('source_sizes');
       if (!sel) return;
       try {
-        const res = await fetch('/api/sftp/datasources');
-        const data = await res.json();
+        const data = await fetchJson('/api/sftp/datasources');
         const list = Array.isArray(data.datasources) ? data.datasources : [];
         const selected = data.selected || '';
         if (!list.length) {
@@ -847,11 +876,12 @@
             const mark = s.id === selected ? ' ✓' : '';
             return `<strong>${escapeHtml(s.name)}</strong>: ${escapeHtml(formatSourceStats(s))}${mark}`;
           });
-          sizesBox.innerHTML = 'Sources — ' + parts.join(' · ');
+          const side = data.sidecar_ok === false ? ' · <span style="color:var(--warn)">sidecar down</span>' : '';
+          sizesBox.innerHTML = 'Sources — ' + parts.join(' · ') + side;
         }
       } catch (e) {
         sel.innerHTML = `<option value="">(failed to load)</option>`;
-        if (sizesBox) sizesBox.textContent = '';
+        if (sizesBox) sizesBox.textContent = String(e.message || e);
       }
     }
 
@@ -859,13 +889,11 @@
       if (!id) return;
       $('err').hidden = true;
       $('status').textContent = 'Switching data source…';
-      const res = await fetch('/api/sftp/config', {
+      const data = await fetchJson('/api/sftp/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ dataSource: id, backend: 'go_sidecar', sidecarUrl: 'http://127.0.0.1:8091', threads: 4 }),
+        body: JSON.stringify({ dataSource: id, backend: 'go_sidecar', sidecarUrl: 'http://127.0.0.1:8091', threads: 4, memoryLimit: '2GB' }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || JSON.stringify(data));
       await showLakePath();
       if (selected) await preview(selected);
       else $('status').textContent = `Data source → ${id} (${data.layout || ''})`;
@@ -949,20 +977,20 @@
         segment_defs: defs,
         catalog_segments: Object.keys(defs).map(Number).filter(Number.isFinite),
         catalog_block_files: Object.keys(BLOCK_FILE_DEFS).map(Number).filter(Number.isFinite),
+        parallel: !!( $('parallel_flag') && $('parallel_flag').checked ),
       };
       const t0 = performance.now();
       try {
-        const res = await fetch('/api/sftp/campaign-preview', {
+        const data = await fetchJson('/api/sftp/campaign-preview', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
           body: JSON.stringify(body),
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || JSON.stringify(data));
         setMetrics(data.metrics || {});
         setCampaignPayload(data.campaign, body);
         setFinalSql(data.sql || {});
-        $('status').textContent = `Campaign #${camp.id} · ${Math.round(performance.now() - t0)} ms`;
+        const mode = data.parallel ? 'parallel' : 'sequential';
+        $('status').textContent = `Campaign #${camp.id} · ${mode} · ${Math.round(performance.now() - t0)} ms`;
       } catch (e) {
         $('err').hidden = false;
         $('err').textContent = String(e.message || e);
@@ -980,6 +1008,11 @@
           $('err').textContent = String(e.message || e);
           $('status').textContent = '';
         }
+      });
+    }
+    if ($('parallel_flag')) {
+      $('parallel_flag').addEventListener('change', () => {
+        if (selected) preview(selected);
       });
     }
     renderAvailableSegments();

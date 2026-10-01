@@ -9,41 +9,61 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	_ "github.com/duckdb/duckdb-go/v2"
 )
 
 type pool struct {
-	ch chan *sql.DB
+	ch             chan *sql.DB
+	defaultThreads int
+	defaultMem     string
+	waitNs         atomic.Int64
+	queries        atomic.Int64
 }
 
 func newPool(size, threads int, mem string) (*pool, error) {
-	p := &pool{ch: make(chan *sql.DB, size)}
+	p := &pool{
+		ch:             make(chan *sql.DB, size),
+		defaultThreads: threads,
+		defaultMem:     mem,
+	}
 	for i := 0; i < size; i++ {
 		db, err := sql.Open("duckdb", "")
 		if err != nil {
 			return nil, err
 		}
-		if _, err := db.Exec(fmt.Sprintf("SET threads=%d", threads)); err != nil {
-			return nil, err
-		}
-		if _, err := db.Exec(fmt.Sprintf("SET memory_limit='%s'", mem)); err != nil {
-			return nil, err
-		}
-		if _, err := db.Exec("SET TimeZone='UTC'"); err != nil {
-			return nil, err
-		}
+		// One logical DuckDB connection per pool slot — no internal multiplexing.
 		db.SetMaxOpenConns(1)
 		db.SetMaxIdleConns(1)
+
+		stmts := []string{
+			fmt.Sprintf("SET threads=%d", threads),
+			fmt.Sprintf("SET memory_limit='%s'", mem),
+			"SET TimeZone='UTC'",
+			// Aggregation/scan friendly: skip preserving insert order.
+			"SET preserve_insertion_order=false",
+		}
+		for _, s := range stmts {
+			if _, err := db.Exec(s); err != nil {
+				// Older DuckDB builds may lack some settings — ignore unknown.
+				if !strings.Contains(strings.ToLower(err.Error()), "unrecognized") &&
+					!strings.Contains(strings.ToLower(err.Error()), "not found") {
+					return nil, fmt.Errorf("%s: %w", s, err)
+				}
+			}
+		}
 		p.ch <- db
 	}
-
 	return p, nil
 }
 
 func (p *pool) withDB(fn func(*sql.DB) error) error {
+	t0 := time.Now()
 	db := <-p.ch
+	p.waitNs.Add(time.Since(t0).Nanoseconds())
+	p.queries.Add(1)
 	defer func() { p.ch <- db }()
 	return fn(db)
 }
@@ -52,18 +72,19 @@ func (p *pool) available() int { return len(p.ch) }
 func (p *pool) size() int      { return cap(p.ch) }
 
 type reqBody struct {
-	SQL          string `json:"sql"`
-	Threads      *int   `json:"threads"`
-	MemoryLimit  string `json:"memory_limit"`
+	SQL         string `json:"sql"`
+	Threads     *int   `json:"threads"`
+	MemoryLimit string `json:"memory_limit"`
 }
 
-func applySessionSettings(db *sql.DB, body reqBody) error {
-	if body.Threads != nil {
+func (p *pool) applySessionSettings(db *sql.DB, body reqBody) error {
+	// Skip no-op SETs — every campaign-preview fans out many /query calls with the same opts.
+	if body.Threads != nil && *body.Threads != p.defaultThreads {
 		if _, err := db.Exec(fmt.Sprintf("SET threads=%d", *body.Threads)); err != nil {
 			return err
 		}
 	}
-	if body.MemoryLimit != "" {
+	if body.MemoryLimit != "" && !strings.EqualFold(body.MemoryLimit, p.defaultMem) {
 		mem := strings.ReplaceAll(body.MemoryLimit, "'", "''")
 		if _, err := db.Exec(fmt.Sprintf("SET memory_limit='%s'", mem)); err != nil {
 			return err
@@ -75,9 +96,10 @@ func applySessionSettings(db *sql.DB, body reqBody) error {
 func main() {
 	host := env("SIDECAR_HOST", "127.0.0.1")
 	port := env("SIDECAR_PORT", "8091")
-	threads, _ := strconv.Atoi(env("DUCKDB_THREADS", "2"))
+	threads, _ := strconv.Atoi(env("DUCKDB_THREADS", "4"))
+	// Sized for parallel campaign-preview fan-out on ~12-core hosts without OOM.
 	poolSize, _ := strconv.Atoi(env("DUCKDB_POOL_SIZE", "8"))
-	mem := env("DUCKDB_MEMORY_LIMIT", "4GB")
+	mem := env("DUCKDB_MEMORY_LIMIT", "2GB")
 
 	p, err := newPool(poolSize, threads, mem)
 	if err != nil {
@@ -86,6 +108,11 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		q := p.queries.Load()
+		var avgWaitMs float64
+		if q > 0 {
+			avgWaitMs = float64(p.waitNs.Load()) / float64(q) / 1e6
+		}
 		writeJSON(w, 200, map[string]any{
 			"ok":             true,
 			"engine":         "duckdb",
@@ -94,8 +121,10 @@ func main() {
 			"memory_limit":   mem,
 			"pool_size":      p.size(),
 			"pool_available": p.available(),
+			"queries_total":  q,
+			"avg_pool_wait_ms": avgWaitMs,
 			"parallelism": map[string]any{
-				"intra_query_threads":      threads,
+				"intra_query_threads":     threads,
 				"inter_query_connections": p.size(),
 			},
 		})
@@ -106,6 +135,7 @@ func main() {
 			http.Error(w, "POST only", 405)
 			return
 		}
+		r.Body = http.MaxBytesReader(w, r.Body, 16<<20)
 		var body reqBody
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.SQL == "" {
 			writeJSON(w, 400, map[string]any{"error": "sql required"})
@@ -114,7 +144,7 @@ func main() {
 		t0 := time.Now()
 		var rows []map[string]any
 		err := p.withDB(func(db *sql.DB) error {
-			if err := applySessionSettings(db, body); err != nil {
+			if err := p.applySessionSettings(db, body); err != nil {
 				return err
 			}
 			rs, err := db.Query(body.SQL)
@@ -161,6 +191,7 @@ func main() {
 			http.Error(w, "POST only", 405)
 			return
 		}
+		r.Body = http.MaxBytesReader(w, r.Body, 16<<20)
 		var body reqBody
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.SQL == "" {
 			writeJSON(w, 400, map[string]any{"error": "sql required"})
@@ -168,7 +199,7 @@ func main() {
 		}
 		t0 := time.Now()
 		err := p.withDB(func(db *sql.DB) error {
-			if err := applySessionSettings(db, body); err != nil {
+			if err := p.applySessionSettings(db, body); err != nil {
 				return err
 			}
 			_, err := db.Exec(body.SQL)
@@ -185,8 +216,17 @@ func main() {
 	})
 
 	addr := host + ":" + port
+	srv := &http.Server{
+		Addr:              addr,
+		Handler:           mux,
+		ReadHeaderTimeout: 10 * time.Second,
+		// Disable write deadline: DuckDB queries can run longer than a fixed write timeout.
+		// IdleTimeout still reaps unused keep-alives.
+		IdleTimeout:    120 * time.Second,
+		MaxHeaderBytes: 1 << 20,
+	}
 	log.Printf("DuckDB Go sidecar on http://%s (pool=%d, threads/conn=%d, memory=%s)", addr, poolSize, threads, mem)
-	log.Fatal(http.ListenAndServe(addr, mux))
+	log.Fatal(srv.ListenAndServe())
 }
 
 func normalize(v any) any {
@@ -205,7 +245,9 @@ func normalize(v any) any {
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(v)
+	enc := json.NewEncoder(w)
+	enc.SetEscapeHTML(false)
+	_ = enc.Encode(v)
 }
 
 func env(k, def string) string {

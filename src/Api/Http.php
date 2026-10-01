@@ -101,40 +101,49 @@ final class Http
         if ($method === 'GET' && $path === '/api/sftp/config') {
             $cfg = $this->duckCfg->get();
             $sources = \App\Config\DataSources::list();
-            $bin = (string) ($cfg['binary'] ?? '');
-            $duck = new Session($bin !== '' ? $bin : null);
-            $sources = \App\Config\DataSources::enrichWithRowCounts($sources, $duck);
+            $wantCounts = !isset($_GET['counts']) || $_GET['counts'] !== '0';
+            if ($wantCounts && $this->sidecarReachable()) {
+                $bin = (string) ($cfg['binary'] ?? '');
+                $duck = new Session($bin !== '' ? $bin : null);
+                $sources = \App\Config\DataSources::enrichWithRowCounts($sources, $duck);
+            }
             $current = \App\Config\DataSources::findByPath($sources, (string) ($cfg['parquetPath'] ?? ''));
             $this->json(200, [
                 'ok' => true,
                 'config' => $cfg,
                 'dataSource' => $current,
                 'layout' => \App\Config\DataSources::detectLayout((string) ($cfg['parquetPath'] ?? '')),
+                'sidecar_ok' => $this->sidecarReachable(),
             ]);
             return;
         }
         if ($method === 'GET' && $path === '/api/sftp/datasources') {
             $cfg = $this->duckCfg->get();
             $sources = \App\Config\DataSources::list();
-            $bin = (string) ($cfg['binary'] ?? '');
-            $duck = new Session($bin !== '' ? $bin : null);
-            $opts = [];
-            if ($cfg['threads'] !== null) {
-                $opts['threads'] = (int) $cfg['threads'];
+            $wantCounts = !isset($_GET['counts']) || $_GET['counts'] !== '0';
+            $sidecarOk = $this->sidecarReachable();
+            if ($wantCounts && $sidecarOk) {
+                $bin = (string) ($cfg['binary'] ?? '');
+                $duck = new Session($bin !== '' ? $bin : null);
+                $opts = [];
+                if ($cfg['threads'] !== null) {
+                    $opts['threads'] = (int) $cfg['threads'];
+                }
+                if ($cfg['memoryLimit'] !== null && $cfg['memoryLimit'] !== '') {
+                    $opts['memory_limit'] = (string) $cfg['memoryLimit'];
+                }
+                if ($opts !== []) {
+                    $duck->withOptions($opts);
+                }
+                $sources = \App\Config\DataSources::enrichWithRowCounts($sources, $duck);
             }
-            if ($cfg['memoryLimit'] !== null && $cfg['memoryLimit'] !== '') {
-                $opts['memory_limit'] = (string) $cfg['memoryLimit'];
-            }
-            if ($opts !== []) {
-                $duck->withOptions($opts);
-            }
-            $sources = \App\Config\DataSources::enrichWithRowCounts($sources, $duck);
             $current = \App\Config\DataSources::findByPath($sources, (string) ($cfg['parquetPath'] ?? ''));
             $this->json(200, [
                 'ok' => true,
                 'datasources' => $sources,
                 'selected' => $current['id'] ?? null,
                 'parquetPath' => $cfg['parquetPath'] ?? null,
+                'sidecar_ok' => $sidecarOk,
             ]);
             return;
         }
@@ -259,6 +268,7 @@ final class Http
                 'ok' => true,
                 'driver' => Session::driver(),
                 'sidecar' => getenv('DUCKDB_SIDECAR_URL') ?: null,
+                'parallel' => (bool) ($result['parallel'] ?? false),
                 'duckdb' => [
                     'binary' => $cfg['binary'],
                     'parquetPath' => $cfg['parquetPath'],
@@ -704,6 +714,27 @@ final class Http
             $input['schema'] = (string) $body['schema'];
         }
         return $input;
+    }
+
+    private ?bool $sidecarOkCache = null;
+
+    private function sidecarReachable(): bool
+    {
+        if ($this->sidecarOkCache !== null) {
+            return $this->sidecarOkCache;
+        }
+        $base = rtrim((string) (getenv('DUCKDB_SIDECAR_URL') ?: ''), '/');
+        if ($base === '') {
+            return $this->sidecarOkCache = false;
+        }
+        $raw = @file_get_contents($base . '/health', false, stream_context_create([
+            'http' => ['method' => 'GET', 'timeout' => 1.5, 'ignore_errors' => true],
+        ]));
+        if (!is_string($raw) || $raw === '') {
+            return $this->sidecarOkCache = false;
+        }
+        $decoded = json_decode($raw, true);
+        return $this->sidecarOkCache = is_array($decoded) && !empty($decoded['ok']);
     }
 
     /** @return array<string, mixed> */
