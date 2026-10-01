@@ -1,0 +1,6 @@
+{
+  "id": "dummy_1cr",
+  "name": "Flat hive (1 crore)",
+  "layout": "flat",
+  "description": "10M contacts in contact/account_id=*/part-*.parquet"
+}

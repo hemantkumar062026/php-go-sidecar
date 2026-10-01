@@ -1,0 +1,6 @@
+{
+  "id": "dummy",
+  "name": "Tiny demo",
+  "layout": "flat",
+  "description": "Small fixed fixture for local smoke tests"
+}

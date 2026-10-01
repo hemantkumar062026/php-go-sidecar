@@ -171,12 +171,19 @@
   <main>
     <h1>Campaigns</h1>
     <p class="lede">Select a campaign to see its details and target audience counts.</p>
-    <p class="lede" style="margin-top:-1rem;font-size:0.85rem">Lake: <code id="lake_path">…</code></p>
+    <p class="lede" style="margin-top:-1rem;font-size:0.85rem">Lake: <code id="lake_path">…</code> · layout <code id="lake_layout">…</code> · size <code id="lake_size">…</code> · rows <code id="lake_rows">…</code></p>
+    <div id="source_sizes" class="lede" style="margin-top:-0.75rem;font-size:0.85rem"></div>
 
     <div class="top">
       <div>
         <label for="account_id">Account ID</label>
         <input id="account_id" type="number" value="1133" />
+      </div>
+      <div>
+        <label for="data_source">Data source</label>
+        <select id="data_source" style="min-width:260px;border:1px solid var(--line);border-radius:8px;padding:0.5rem 0.65rem;font:inherit;background:#fff">
+          <option value="">Loading…</option>
+        </select>
       </div>
       <button type="button" id="reload" class="ghost">Reload campaigns</button>
     </div>
@@ -769,22 +776,99 @@
 
     async function showLakePath() {
       const el = $('lake_path');
+      const lay = $('lake_layout');
+      const sz = $('lake_size');
+      const rowsEl = $('lake_rows');
       if (!el) return;
       try {
         const res = await fetch('/api/sftp/config');
         const data = await res.json();
         const path = data?.config?.parquetPath || '(not set)';
+        const ds = data?.dataSource || {};
         el.textContent = path;
-        if (String(path).includes('/data/dummy') && !String(path).includes('dummy_1cr')) {
+        if (lay) lay.textContent = data?.layout || ds.layout || '—';
+        if (sz) sz.textContent = ds.size_human || '—';
+        if (rowsEl) {
+          let r = ds.row_count_human || (ds.row_count != null ? Number(ds.row_count).toLocaleString('en-IN') : '—');
+          if (ds.delta_row_count != null) {
+            r += ` (+${Number(ds.delta_row_count).toLocaleString('en-IN')} delta rows)`;
+          }
+          rowsEl.textContent = r;
+        }
+        if (String(path).includes('/data/dummy') && !String(path).includes('dummy_1cr') && !String(path).includes('dummy_base_delta')) {
           el.style.color = 'var(--warn)';
-          el.title = 'Tiny demo lake — use data/dummy_1cr for million+ counts';
+          el.title = 'Tiny demo lake — pick Flat hive (1 crore) or Base + deltas for larger counts';
         } else {
           el.style.color = '';
           el.title = '';
         }
       } catch (_) {
         el.textContent = '(config unavailable)';
+        if (lay) lay.textContent = '—';
+        if (sz) sz.textContent = '—';
+        if (rowsEl) rowsEl.textContent = '—';
       }
+    }
+
+    function formatSourceStats(s) {
+      const size = s.size_human || '—';
+      const rows = s.row_count_human || (s.row_count != null ? Number(s.row_count).toLocaleString('en-IN') : '—');
+      let extra = '';
+      if (s.layout === 'base_delta' && s.delta_row_count != null) {
+        const df = s.delta_file_count ? `${s.delta_file_count} files / ` : '';
+        extra = ` · deltas ${df}${Number(s.delta_row_count).toLocaleString('en-IN')} rows`;
+      }
+      return `${rows} rows · ${size}${extra}`;
+    }
+
+    async function loadDataSources() {
+      const sel = $('data_source');
+      const sizesBox = $('source_sizes');
+      if (!sel) return;
+      try {
+        const res = await fetch('/api/sftp/datasources');
+        const data = await res.json();
+        const list = Array.isArray(data.datasources) ? data.datasources : [];
+        const selected = data.selected || '';
+        if (!list.length) {
+          sel.innerHTML = '<option value="">(no lakes found under data/)</option>';
+          if (sizesBox) sizesBox.textContent = '';
+          return;
+        }
+        sel.innerHTML = list.map((s) => {
+          const label = `${s.name} [${s.layout}] · ${formatSourceStats(s)}`;
+          const selAttr = s.id === selected ? ' selected' : '';
+          return `<option value="${escapeAttr(s.id)}"${selAttr}>${escapeHtml(label)}</option>`;
+        }).join('');
+        const cur = list.find((s) => s.id === selected);
+        sel.title = cur?.description || '';
+        if (sizesBox) {
+          const parts = list.map((s) => {
+            const mark = s.id === selected ? ' ✓' : '';
+            return `<strong>${escapeHtml(s.name)}</strong>: ${escapeHtml(formatSourceStats(s))}${mark}`;
+          });
+          sizesBox.innerHTML = 'Sources — ' + parts.join(' · ');
+        }
+      } catch (e) {
+        sel.innerHTML = `<option value="">(failed to load)</option>`;
+        if (sizesBox) sizesBox.textContent = '';
+      }
+    }
+
+    async function applyDataSource(id) {
+      if (!id) return;
+      $('err').hidden = true;
+      $('status').textContent = 'Switching data source…';
+      const res = await fetch('/api/sftp/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ dataSource: id, backend: 'go_sidecar', sidecarUrl: 'http://127.0.0.1:8091', threads: 4 }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || JSON.stringify(data));
+      await showLakePath();
+      if (selected) await preview(selected);
+      else $('status').textContent = `Data source → ${id} (${data.layout || ''})`;
     }
 
     async function loadCampaigns() {
@@ -792,6 +876,7 @@
       $('err').textContent = '';
       const accountId = Number($('account_id').value);
       try {
+        await loadDataSources();
         await showLakePath();
         campaigns = await ensureDemoCampaigns(accountId);
         selected = campaigns[0] || null;
@@ -886,6 +971,17 @@
     }
 
     $('reload').addEventListener('click', loadCampaigns);
+    if ($('data_source')) {
+      $('data_source').addEventListener('change', async () => {
+        try {
+          await applyDataSource($('data_source').value);
+        } catch (e) {
+          $('err').hidden = false;
+          $('err').textContent = String(e.message || e);
+          $('status').textContent = '';
+        }
+      });
+    }
     renderAvailableSegments();
     renderAvailableBlocks();
     loadCampaigns();

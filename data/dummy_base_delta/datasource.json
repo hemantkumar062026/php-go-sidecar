@@ -1,0 +1,30 @@
+{
+  "id": "dummy_base_delta",
+  "name": "Base + deltas (SFTP contact)",
+  "layout": "base_delta",
+  "account_id": 1133,
+  "base_rows": 10000000,
+  "delta_files": 45,
+  "delta_columns": [
+    "email_status",
+    "sms_status",
+    "is_deleted",
+    "is_contact",
+    "last_emailed",
+    "last_sms",
+    "email_suppressed_on",
+    "sms_suppressed_on",
+    "email_bounce_count",
+    "last_open",
+    "last_click",
+    "id",
+    "account_id",
+    "delta_seq",
+    "updated_at"
+  ],
+  "paths": {
+    "base_glob": "contact/base/**/*.parquet",
+    "delta_glob": "contact/delta/**/*.parquet",
+    "block_file_glob": "block_file_data/*.parquet"
+  }
+}

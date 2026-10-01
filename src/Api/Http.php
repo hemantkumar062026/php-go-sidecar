@@ -99,19 +99,77 @@ final class Http
         }
         // DuckDB runtime config (binary / parquetPath / threads / memoryLimit)
         if ($method === 'GET' && $path === '/api/sftp/config') {
+            $cfg = $this->duckCfg->get();
+            $sources = \App\Config\DataSources::list();
+            $bin = (string) ($cfg['binary'] ?? '');
+            $duck = new Session($bin !== '' ? $bin : null);
+            $sources = \App\Config\DataSources::enrichWithRowCounts($sources, $duck);
+            $current = \App\Config\DataSources::findByPath($sources, (string) ($cfg['parquetPath'] ?? ''));
             $this->json(200, [
                 'ok' => true,
-                'config' => $this->duckCfg->get(),
+                'config' => $cfg,
+                'dataSource' => $current,
+                'layout' => \App\Config\DataSources::detectLayout((string) ($cfg['parquetPath'] ?? '')),
+            ]);
+            return;
+        }
+        if ($method === 'GET' && $path === '/api/sftp/datasources') {
+            $cfg = $this->duckCfg->get();
+            $sources = \App\Config\DataSources::list();
+            $bin = (string) ($cfg['binary'] ?? '');
+            $duck = new Session($bin !== '' ? $bin : null);
+            $opts = [];
+            if ($cfg['threads'] !== null) {
+                $opts['threads'] = (int) $cfg['threads'];
+            }
+            if ($cfg['memoryLimit'] !== null && $cfg['memoryLimit'] !== '') {
+                $opts['memory_limit'] = (string) $cfg['memoryLimit'];
+            }
+            if ($opts !== []) {
+                $duck->withOptions($opts);
+            }
+            $sources = \App\Config\DataSources::enrichWithRowCounts($sources, $duck);
+            $current = \App\Config\DataSources::findByPath($sources, (string) ($cfg['parquetPath'] ?? ''));
+            $this->json(200, [
+                'ok' => true,
+                'datasources' => $sources,
+                'selected' => $current['id'] ?? null,
+                'parquetPath' => $cfg['parquetPath'] ?? null,
             ]);
             return;
         }
         if (($method === 'POST' || $method === 'PUT') && $path === '/api/sftp/config') {
             $body = $this->body();
+            // Allow selecting a named data source id → resolves parquetPath
+            if (isset($body['dataSource']) || isset($body['datasource']) || isset($body['data_source'])) {
+                $dsId = (string) ($body['dataSource'] ?? $body['datasource'] ?? $body['data_source']);
+                $found = null;
+                foreach (\App\Config\DataSources::list() as $s) {
+                    if ($s['id'] === $dsId) {
+                        $found = $s;
+                        break;
+                    }
+                }
+                if ($found === null) {
+                    throw new \InvalidArgumentException('unknown dataSource "' . $dsId . '"');
+                }
+                $body['parquetPath'] = $found['path'];
+                if (!isset($body['memoryLimit']) && $found['layout'] === 'base_delta') {
+                    $body['memoryLimit'] = '2GB';
+                }
+                if (!isset($body['memoryLimit']) && $found['id'] === 'dummy_1cr') {
+                    $body['memoryLimit'] = '4GB';
+                }
+            }
             $replace = (bool) ($body['replace'] ?? false);
             $cfg = $this->duckCfg->set($body, $replace);
+            $sources = \App\Config\DataSources::list();
+            $current = \App\Config\DataSources::findByPath($sources, (string) ($cfg['parquetPath'] ?? ''));
             $this->json(200, [
                 'ok' => true,
                 'config' => $cfg,
+                'dataSource' => $current,
+                'layout' => \App\Config\DataSources::detectLayout((string) ($cfg['parquetPath'] ?? '')),
             ]);
             return;
         }
@@ -609,12 +667,19 @@ final class Http
             }
             $input['parquet_path'] = $parquetPath;
 
-            $glob = (string) ($body['lake_glob'] ?? getenv('LAKE_GLOB') ?: '');
-            if ($glob === '') {
-                $glob = rtrim($parquetPath, '/') . '/contact/**/*.parquet';
+            $layout = (string) ($body['layout'] ?? '');
+            if ($layout === '') {
+                $layout = \App\Config\DataSources::detectLayout($parquetPath);
             }
-            $input['from'] = "read_parquet('" . str_replace("'", "''", $glob)
-                . "', hive_partitioning=true, union_by_name=true)";
+            $input['layout'] = $layout;
+
+            $glob = (string) ($body['lake_glob'] ?? getenv('LAKE_GLOB') ?: '');
+            if ($glob !== '') {
+                $input['from'] = "read_parquet('" . str_replace("'", "''", $glob)
+                    . "', hive_partitioning=true, union_by_name=true)";
+            } else {
+                $input['from'] = \App\Config\DataSources::contactFromSql($parquetPath, $layout);
+            }
 
             $blockGlob = (string) (
                 $body['block_file_glob']
