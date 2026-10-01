@@ -38,6 +38,7 @@ func newPool(size, threads int, mem string) (*pool, error) {
 		db.SetMaxIdleConns(1)
 		p.ch <- db
 	}
+
 	return p, nil
 }
 
