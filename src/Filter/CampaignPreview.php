@@ -31,8 +31,19 @@ final class CampaignPreview
         $includeBf = self::intList($body['include_block_files'] ?? []);
         $excludeBf = self::intList($body['exclude_block_files'] ?? []);
         $excludeBt = self::intList($body['exclude_block_table_ids'] ?? []);
+        $catalogSeg = self::intList($body['catalog_segments'] ?? []);
+        $catalogBf = self::intList($body['catalog_block_files'] ?? []);
 
-        self::assertSegmentDefs(array_merge($includeSeg, $excludeSeg), $segmentDefs);
+        // Also catalog every id present in segment_defs so Available segments can show counts.
+        foreach (array_keys($segmentDefs) as $defKey) {
+            if (is_numeric($defKey)) {
+                $catalogSeg[] = (int) $defKey;
+            }
+        }
+        $catalogSeg = array_values(array_unique($catalogSeg));
+        $catalogBf = array_values(array_unique(array_merge($catalogBf, $includeBf, $excludeBf)));
+
+        self::assertSegmentDefs(array_merge($includeSeg, $excludeSeg, $catalogSeg), $segmentDefs);
 
         $sqlMap = [];
 
@@ -45,18 +56,33 @@ final class CampaignPreview
                 ['type' => 'status', 'operator' => 'status_active', 'options' => ['email']],
                 ['type' => 'segments', 'operator' => 'in_any_segments', 'options' => $includeSeg],
             ]], $segmentDefs);
-            foreach ($includeSeg as $sid) {
-                $sqlMap['segment_part_' . $sid] = self::distinctCountSql($baseInput, [[
-                    ['type' => 'status', 'operator' => 'status_active', 'options' => ['email']],
-                    ['type' => 'segments', 'operator' => 'in_any_segments', 'options' => [$sid]],
-                ]], $segmentDefs);
-            }
+        }
+
+        foreach ($catalogSeg as $sid) {
+            $sqlMap['segment_part_' . $sid] = self::distinctCountSql($baseInput, [[
+                ['type' => 'status', 'operator' => 'status_active', 'options' => ['email']],
+                ['type' => 'segments', 'operator' => 'in_any_segments', 'options' => [$sid]],
+            ]], $segmentDefs);
         }
 
         if ($excludeSeg !== []) {
             $sqlMap['exclude_segments'] = self::distinctCountSql($baseInput, [[
                 ['type' => 'status', 'operator' => 'status_active', 'options' => ['email']],
                 ['type' => 'segments', 'operator' => 'in_any_segments', 'options' => $excludeSeg],
+            ]], $segmentDefs);
+        }
+
+        if ($includeBf !== []) {
+            $sqlMap['include_block_files'] = self::distinctCountSql($baseInput, [[
+                ['type' => 'status', 'operator' => 'status_active', 'options' => ['email']],
+                ['type' => 'block_files', 'operator' => 'in_blockfiles', 'options' => $includeBf],
+            ]], $segmentDefs);
+        }
+
+        foreach ($catalogBf as $bid) {
+            $sqlMap['block_part_' . $bid] = self::distinctCountSql($baseInput, [[
+                ['type' => 'status', 'operator' => 'status_active', 'options' => ['email']],
+                ['type' => 'block_files', 'operator' => 'in_blockfiles', 'options' => [$bid]],
             ]], $segmentDefs);
         }
 
@@ -85,9 +111,17 @@ final class CampaignPreview
         }
 
         $segmentParts = [];
-        foreach ($includeSeg as $sid) {
+        foreach ($catalogSeg as $sid) {
             $key = 'segment_part_' . $sid;
             $segmentParts[(string) $sid] = (int) ($metrics[$key] ?? 0);
+            unset($metrics[$key]);
+            unset($sqlMap[$key]);
+        }
+
+        $blockParts = [];
+        foreach ($catalogBf as $bid) {
+            $key = 'block_part_' . $bid;
+            $blockParts[(string) $bid] = (int) ($metrics[$key] ?? 0);
             unset($metrics[$key]);
             unset($sqlMap[$key]);
         }
@@ -96,6 +130,7 @@ final class CampaignPreview
         $final = (int) ($metrics['final_target'] ?? 0);
         $metrics['excluded_from_include'] = max(0, $includeBase - $final);
         $metrics['segment_parts'] = $segmentParts;
+        $metrics['block_file_parts'] = $blockParts;
 
         return [
             'campaign' => $campaign,

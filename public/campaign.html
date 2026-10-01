@@ -150,8 +150,10 @@
       cursor: pointer;
     }
     .seg-card:hover { border-color: var(--accent); background: #f0fdfa; }
-    .seg-card .sid { font-weight: 700; font-size: 0.95rem; }
+    .seg-card .sid { font-weight: 700; font-size: 0.95rem; display: flex; justify-content: space-between; gap: 0.5rem; align-items: baseline; }
+    .seg-card .count { font-variant-numeric: tabular-nums; color: var(--accent); font-size: 0.9rem; white-space: nowrap; }
     .seg-card .rules { font-size: 0.78rem; color: var(--muted); margin-top: 0.25rem; line-height: 1.35; }
+    .seg-card .meta { font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; }
     .seg-actions { display: flex; gap: 0.4rem; margin-top: 0.45rem; flex-wrap: wrap; }
     .seg-actions button {
       margin: 0;
@@ -159,6 +161,7 @@
       font-size: 0.75rem;
       border-radius: 999px;
     }
+    .parts + .parts { margin-top: 0.75rem; }
   </style>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -168,6 +171,7 @@
   <main>
     <h1>Campaigns</h1>
     <p class="lede">Select a campaign to see its details and target audience counts.</p>
+    <p class="lede" style="margin-top:-1rem;font-size:0.85rem">Lake: <code id="lake_path">…</code></p>
 
     <div class="top">
       <div>
@@ -199,9 +203,19 @@
         <div class="seg-panel">
           <h2>Available segments</h2>
           <p class="hint" style="margin:0 0 0.6rem;font-size:0.8rem;color:var(--muted)">
-            From Segment definitions. Click Include / Exclude to fill the campaign fields.
+            From Segment definitions. Counts = active email ∩ segment. Click Include / Exclude.
           </p>
           <div class="seg-list" id="available_segments">
+            <div class="empty">Loading…</div>
+          </div>
+        </div>
+
+        <div class="seg-panel">
+          <h2>Available block files</h2>
+          <p class="hint" style="margin:0 0 0.6rem;font-size:0.8rem;color:var(--muted)">
+            Match contact <code>f2</code> to block <code>unique_identifier</code>. Counts = active email in that block.
+          </p>
+          <div class="seg-list" id="available_blocks">
             <div class="empty">Loading…</div>
           </div>
         </div>
@@ -243,12 +257,23 @@
             <div class="label">Exclude block files</div>
             <div class="value" id="m_ex_bf">—</div>
           </div>
+          <div class="metric">
+            <div class="label">Include block files</div>
+            <div class="value" id="m_in_bf">—</div>
+          </div>
         </div>
         <div class="parts">
           <strong>Per-segment</strong>
           <table>
             <thead><tr><th>Segment</th><th>Count</th></tr></thead>
             <tbody id="seg_parts"><tr><td colspan="2">—</td></tr></tbody>
+          </table>
+        </div>
+        <div class="parts">
+          <strong>Per-block file</strong>
+          <table>
+            <thead><tr><th>Block file</th><th>Count</th></tr></thead>
+            <tbody id="bf_parts"><tr><td colspan="2">—</td></tr></tbody>
           </table>
         </div>
         <div class="status" id="status"></div>
@@ -280,16 +305,25 @@
 
     /** Live segment defs (editable in UI). */
     let SEGMENT_DEFS = JSON.parse(JSON.stringify(SEGMENT_DEFS_DEFAULT));
+    /** @type {Record<string, number|null>} */
+    let SEGMENT_COUNTS = {};
+    /** @type {Record<string, number|null>} */
+    let BLOCK_COUNTS = {};
+
+    const BLOCK_FILE_DEFS = {
+      "56": {
+        name: "Include list",
+        match_field: "f2 ↔ unique_identifier",
+        description: "Dummy seed: every 500th contact with rem=7 (active emails). Typical include block.",
+      },
+      "57": {
+        name: "Exclude list",
+        match_field: "f2 ↔ unique_identifier",
+        description: "Dummy seed: every 2000th contact with rem=13 (active emails). Typical suppress block.",
+      },
+    };
 
     function getSegmentDefs() {
-      if ($('edit_segment_defs')) {
-        try {
-          const parsed = JSON.parse($('edit_segment_defs').value);
-          if (parsed && typeof parsed === 'object') {
-            SEGMENT_DEFS = parsed;
-          }
-        } catch (_) { /* keep last good */ }
-      }
       return SEGMENT_DEFS;
     }
 
@@ -324,6 +358,12 @@
       el.value = parseIds(el.value).filter((n) => n !== id).join(',');
     }
 
+    function countLabel(map, id) {
+      const v = map[String(id)];
+      if (v == null) return '…';
+      return fmt(v);
+    }
+
     function renderAvailableSegments() {
       const box = $('available_segments');
       if (!box) return;
@@ -335,7 +375,10 @@
       }
       box.innerHTML = ids.map((id) => `
         <div class="seg-card" data-sid="${escapeAttr(id)}">
-          <div class="sid">Segment ${escapeHtml(id)}</div>
+          <div class="sid">
+            <span>Segment ${escapeHtml(id)}</span>
+            <span class="count" data-count-seg="${escapeAttr(id)}">${countLabel(SEGMENT_COUNTS, id)}</span>
+          </div>
           <div class="rules">${escapeHtml(summarizeSegment(defs[id]))}</div>
           <div class="seg-actions">
             <button type="button" class="ghost" data-act="include" data-sid="${escapeAttr(id)}">+ Include</button>
@@ -364,6 +407,64 @@
             preview(selected);
           }
         });
+      });
+    }
+
+    function renderAvailableBlocks() {
+      const box = $('available_blocks');
+      if (!box) return;
+      const ids = Object.keys(BLOCK_FILE_DEFS).sort((a, b) => Number(a) - Number(b));
+      if (!ids.length) {
+        box.innerHTML = '<div class="empty">No block files configured.</div>';
+        return;
+      }
+      box.innerHTML = ids.map((id) => {
+        const b = BLOCK_FILE_DEFS[id];
+        return `
+        <div class="seg-card" data-bid="${escapeAttr(id)}">
+          <div class="sid">
+            <span>Block ${escapeHtml(id)} · ${escapeHtml(b.name || '')}</span>
+            <span class="count" data-count-bf="${escapeAttr(id)}">${countLabel(BLOCK_COUNTS, id)}</span>
+          </div>
+          <div class="rules">${escapeHtml(b.description || '')}</div>
+          <div class="meta">Match: ${escapeHtml(b.match_field || 'f2 ↔ unique_identifier')}</div>
+          <div class="seg-actions">
+            <button type="button" class="ghost" data-bact="include" data-bid="${escapeAttr(id)}">+ Include</button>
+            <button type="button" class="ghost" data-bact="exclude" data-bid="${escapeAttr(id)}">+ Exclude</button>
+          </div>
+        </div>`;
+      }).join('');
+      box.querySelectorAll('button[data-bact]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const bid = btn.getAttribute('data-bid');
+          const act = btn.getAttribute('data-bact');
+          if (!$('edit_include_block')) {
+            $('err').hidden = false;
+            $('err').textContent = 'Select a campaign first, then use Include / Exclude.';
+            return;
+          }
+          if (act === 'include') {
+            addIdToInput('edit_include_block', bid);
+            removeIdFromInput('edit_exclude_block', bid);
+          } else {
+            addIdToInput('edit_exclude_block', bid);
+            removeIdFromInput('edit_include_block', bid);
+          }
+          if (selected) {
+            readAudienceFromForm(selected);
+            preview(selected);
+          }
+        });
+      });
+    }
+
+    function applyCatalogCounts() {
+      document.querySelectorAll('[data-count-seg]').forEach((el) => {
+        el.textContent = countLabel(SEGMENT_COUNTS, el.getAttribute('data-count-seg'));
+      });
+      document.querySelectorAll('[data-count-bf]').forEach((el) => {
+        el.textContent = countLabel(BLOCK_COUNTS, el.getAttribute('data-count-bf'));
       });
     }
 
@@ -447,11 +548,27 @@
       $('m_active').textContent = fmt(m.active_email);
       $('m_ex_seg').textContent = fmt(m.exclude_segments);
       $('m_ex_bf').textContent = fmt(m.exclude_block_files);
+      if ($('m_in_bf')) $('m_in_bf').textContent = fmt(m.include_block_files);
+
       const parts = m.segment_parts || {};
-      const keys = Object.keys(parts);
+      SEGMENT_COUNTS = { ...SEGMENT_COUNTS, ...parts };
+      const keys = Object.keys(parts).sort((a, b) => Number(a) - Number(b));
       $('seg_parts').innerHTML = keys.length
         ? keys.map((k) => `<tr><td>${k}</td><td>${fmt(parts[k])}</td></tr>`).join('')
         : '<tr><td colspan="2">—</td></tr>';
+
+      const bfParts = m.block_file_parts || {};
+      BLOCK_COUNTS = { ...BLOCK_COUNTS, ...bfParts };
+      const bfKeys = Object.keys(bfParts).sort((a, b) => Number(a) - Number(b));
+      if ($('bf_parts')) {
+        $('bf_parts').innerHTML = bfKeys.length
+          ? bfKeys.map((k) => {
+              const name = BLOCK_FILE_DEFS[k]?.name ? ` · ${BLOCK_FILE_DEFS[k].name}` : '';
+              return `<tr><td>${k}${escapeHtml(name)}</td><td>${fmt(bfParts[k])}</td></tr>`;
+            }).join('')
+          : '<tr><td colspan="2">—</td></tr>';
+      }
+      applyCatalogCounts();
     }
 
     function renderDetails(camp) {
@@ -510,9 +627,14 @@
             <input id="edit_stats_days" type="number" min="0" value="${rules.stats_not_sent_days}" />
           </div>
           <div class="field" style="grid-column:1/-1">
-            <label for="edit_segment_defs">Segment definitions (JSON)</label>
-            <textarea id="edit_segment_defs" style="min-height:120px;width:100%;font-family:ui-monospace,Menlo,monospace;font-size:0.75rem;border:1px solid var(--line);border-radius:8px;padding:0.5rem">${escapeHtml(JSON.stringify(getSegmentDefs(), null, 2))}</textarea>
-            <p class="hint" style="margin:0.35rem 0 0;font-size:0.8rem;color:var(--muted)">Include every id used in Include/Exclude segments. Example key: "489".</p>
+            <label>Query payload · campaign definition</label>
+            <pre id="campaign_payload" style="margin:0;min-height:140px;max-height:280px;overflow:auto;width:100%;font-family:ui-monospace,Menlo,monospace;font-size:0.72rem;border:1px solid var(--line);border-radius:8px;padding:0.65rem;background:#fff;white-space:pre-wrap;word-break:break-word">Loading…</pre>
+            <p class="hint" style="margin:0.35rem 0 0;font-size:0.8rem;color:var(--muted)">Product-filter groups sent to DuckDB (OR of groups, AND within each). Updated after each preview.</p>
+          </div>
+          <div class="field" style="grid-column:1/-1">
+            <label>Final DuckDB query</label>
+            <pre id="final_sql" style="margin:0;min-height:100px;max-height:320px;overflow:auto;width:100%;font-family:ui-monospace,Menlo,monospace;font-size:0.72rem;border:1px solid var(--line);border-radius:8px;padding:0.65rem;background:#fff;white-space:pre-wrap;word-break:break-word">Apply &amp; refresh counts to load SQL…</pre>
+            <p class="hint" style="margin:0.35rem 0 0;font-size:0.8rem;color:var(--muted)">SQL for <code>final_target</code> (COUNT DISTINCT email) executed by the sidecar.</p>
           </div>
           <div class="field">
             <label>Account</label>
@@ -539,17 +661,12 @@
       $('refresh_counts').addEventListener('click', () => {
         if (!selected) return;
         readAudienceFromForm(selected);
-        getSegmentDefs();
         renderAvailableSegments();
+        renderAvailableBlocks();
         preview(selected);
       });
-      if ($('edit_segment_defs')) {
-        $('edit_segment_defs').addEventListener('change', () => {
-          getSegmentDefs();
-          renderAvailableSegments();
-        });
-      }
       renderAvailableSegments();
+      renderAvailableBlocks();
     }
 
     function escapeAttr(s) {
@@ -650,11 +767,32 @@
       return Array.isArray(list) ? list : [];
     }
 
+    async function showLakePath() {
+      const el = $('lake_path');
+      if (!el) return;
+      try {
+        const res = await fetch('/api/sftp/config');
+        const data = await res.json();
+        const path = data?.config?.parquetPath || '(not set)';
+        el.textContent = path;
+        if (String(path).includes('/data/dummy') && !String(path).includes('dummy_1cr')) {
+          el.style.color = 'var(--warn)';
+          el.title = 'Tiny demo lake — use data/dummy_1cr for million+ counts';
+        } else {
+          el.style.color = '';
+          el.title = '';
+        }
+      } catch (_) {
+        el.textContent = '(config unavailable)';
+      }
+    }
+
     async function loadCampaigns() {
       $('err').hidden = true;
       $('err').textContent = '';
       const accountId = Number($('account_id').value);
       try {
+        await showLakePath();
         campaigns = await ensureDemoCampaigns(accountId);
         selected = campaigns[0] || null;
         renderList();
@@ -666,32 +804,44 @@
       }
     }
 
+    function setCampaignPayload(campaign, requestBody) {
+      const el = $('campaign_payload');
+      if (!el) return;
+      const view = {
+        campaign: campaign || [],
+        request: {
+          account_id: requestBody?.account_id,
+          include_segments: requestBody?.include_segments || [],
+          exclude_segments: requestBody?.exclude_segments || [],
+          include_block_files: requestBody?.include_block_files || [],
+          exclude_block_files: requestBody?.exclude_block_files || [],
+          stats_not_sent_days: requestBody?.stats_not_sent_days ?? 0,
+        },
+      };
+      el.textContent = JSON.stringify(view, null, 2);
+    }
+
+    function setFinalSql(sqlMap) {
+      const el = $('final_sql');
+      if (!el) return;
+      const finalSql = sqlMap && sqlMap.final_target ? String(sqlMap.final_target) : '';
+      if (!finalSql) {
+        el.textContent = '(no final_target SQL in response)';
+        return;
+      }
+      // Pretty-print lightly for readability
+      el.textContent = finalSql
+        .replace(/ FROM /gi, '\nFROM ')
+        .replace(/ WHERE /gi, '\nWHERE ')
+        .replace(/ AND /gi, '\n  AND ');
+    }
+
     async function preview(camp) {
       $('err').hidden = true;
       $('err').textContent = '';
       $('status').textContent = 'Loading audience counts…';
       const rules = ($('edit_include_block') ? readAudienceFromForm(camp) : audienceFor(camp));
-      let defs;
-      try {
-        defs = getSegmentDefs();
-      } catch (e) {
-        $('err').hidden = false;
-        $('err').textContent = 'Invalid Segment definitions JSON: ' + e.message;
-        $('status').textContent = '';
-        return;
-      }
-      if ($('edit_segment_defs')) {
-        try {
-          defs = JSON.parse($('edit_segment_defs').value);
-          if (!defs || typeof defs !== 'object') throw new Error('must be a JSON object');
-          SEGMENT_DEFS = defs;
-        } catch (e) {
-          $('err').hidden = false;
-          $('err').textContent = 'Invalid Segment definitions JSON: ' + e.message;
-          $('status').textContent = '';
-          return;
-        }
-      }
+      const defs = getSegmentDefs();
       const needed = [...rules.include_segments, ...rules.exclude_segments];
       const missing = needed.filter((id) => !defs[String(id)]);
       if (missing.length) {
@@ -700,7 +850,7 @@
         $('err').textContent =
           'No segment definition for id(s): ' + missing.join(', ')
           + '. Available: ' + known
-          + '. Add "' + missing[0] + '" in Segment definitions JSON below, then Apply again.';
+          + '. Add the id to Available segments (SEGMENT_DEFS) and Apply again.';
         $('status').textContent = '';
         return;
       }
@@ -712,6 +862,8 @@
         exclude_block_files: rules.exclude_block_files,
         stats_not_sent_days: rules.stats_not_sent_days,
         segment_defs: defs,
+        catalog_segments: Object.keys(defs).map(Number).filter(Number.isFinite),
+        catalog_block_files: Object.keys(BLOCK_FILE_DEFS).map(Number).filter(Number.isFinite),
       };
       const t0 = performance.now();
       try {
@@ -723,6 +875,8 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || JSON.stringify(data));
         setMetrics(data.metrics || {});
+        setCampaignPayload(data.campaign, body);
+        setFinalSql(data.sql || {});
         $('status').textContent = `Campaign #${camp.id} · ${Math.round(performance.now() - t0)} ms`;
       } catch (e) {
         $('err').hidden = false;
@@ -733,6 +887,7 @@
 
     $('reload').addEventListener('click', loadCampaigns);
     renderAvailableSegments();
+    renderAvailableBlocks();
     loadCampaigns();
   </script>
 </body>

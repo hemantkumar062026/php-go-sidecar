@@ -604,7 +604,8 @@ final class Http
             $repoRoot = dirname(__DIR__, 2);
             $parquetPath = (string) ($cfg['parquetPath'] ?? '');
             if ($parquetPath === '') {
-                $parquetPath = $repoRoot . '/data/dummy';
+                $oneCr = $repoRoot . '/data/dummy_1cr';
+                $parquetPath = is_dir($oneCr) ? $oneCr : ($repoRoot . '/data/dummy');
             }
             $input['parquet_path'] = $parquetPath;
 

@@ -125,11 +125,14 @@ final class DuckdbConfig
     public static function defaults(): array
     {
         $repoRoot = dirname(__DIR__, 2);
+        $oneCr = $repoRoot . '/data/dummy_1cr';
+        $tiny = $repoRoot . '/data/dummy';
+        $defaultPath = is_dir($oneCr) ? $oneCr : $tiny;
         return [
             'binary' => getenv('DUCKDB_BIN') ?: null,
-            'parquetPath' => getenv('PARQUET_PATH') ?: ($repoRoot . '/data/dummy'),
+            'parquetPath' => getenv('PARQUET_PATH') ?: $defaultPath,
             'threads' => (int) (getenv('DUCKDB_THREADS') ?: 2),
-            'memoryLimit' => getenv('DUCKDB_MEMORY_LIMIT') ?: '512MB',
+            'memoryLimit' => getenv('DUCKDB_MEMORY_LIMIT') ?: (is_dir($oneCr) ? '4GB' : '512MB'),
             'updated_at' => null,
         ];
     }

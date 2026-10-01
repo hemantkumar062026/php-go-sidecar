@@ -126,7 +126,8 @@ COPY (
     )
     print(f"wrote segment_defs → {seg_path}", flush=True)
 
-    # Block files: ~0.2% include (56), ~0.05% exclude (57) by f2
+    # Block files: match keys that stay email_status=1 / is_deleted=0 on this seed
+    # (i%500==0 would hit status=2; use rem=7 / rem=13 instead)
     block_path = block_dir / "part-0.parquet"
     con.execute(
         f"""
@@ -134,11 +135,11 @@ COPY (
   SELECT * FROM (
     SELECT 56::BIGINT AS block_file_id, printf('ACC%08d', i) AS unique_identifier
     FROM generate_series(1, {rows}) AS t(i)
-    WHERE i % 500 = 0
+    WHERE i % 500 = 7
     UNION ALL
     SELECT 57::BIGINT, printf('ACC%08d', i)
     FROM generate_series(1, {rows}) AS t(i)
-    WHERE i % 2000 = 0
+    WHERE i % 2000 = 13
   )
 ) TO '{block_path}' (FORMAT PARQUET, COMPRESSION ZSTD)
 """
