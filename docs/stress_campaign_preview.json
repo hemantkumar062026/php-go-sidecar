@@ -1,0 +1,561 @@
+{
+  "api": "http://127.0.0.1:8080",
+  "scenario": "seg_9001",
+  "requests_per_cell": 32,
+  "warmup": 3,
+  "sidecar_health": {
+    "avg_pool_wait_ms": 0.00018766666666666666,
+    "client": "go",
+    "engine": "duckdb",
+    "memory_limit": "2GB",
+    "ok": true,
+    "parallelism": {
+      "inter_query_connections": 8,
+      "intra_query_threads": 2
+    },
+    "pool_available": 8,
+    "pool_size": 8,
+    "queries_total": 6,
+    "threads": 2
+  },
+  "datasources": [
+    {
+      "id": "dummy_1cr",
+      "name": "Flat hive (1 crore)",
+      "path": "/Users/lumegalabs/Projects/php-parquet-duckdb/data/dummy_1cr",
+      "layout": "flat",
+      "description": "10M contacts in contact/account_id=*/part-*.parquet",
+      "size_bytes": 37380906,
+      "size_human": "35.6 MB",
+      "meta": {
+        "id": "dummy_1cr",
+        "name": "Flat hive (1 crore)",
+        "layout": "flat",
+        "description": "10M contacts in contact/account_id=*/part-*.parquet"
+      },
+      "row_count": 10000000,
+      "row_count_human": "10,000,000"
+    },
+    {
+      "id": "dummy_base_delta",
+      "name": "Base + deltas (SFTP contact)",
+      "path": "/Users/lumegalabs/Projects/php-parquet-duckdb/data/dummy_base_delta",
+      "layout": "base_delta",
+      "description": "1 crore base parquet + 45 sparse delta files (status/suppressions/\u2026)",
+      "size_bytes": 41039981,
+      "size_human": "39.1 MB",
+      "meta": {
+        "id": "dummy_base_delta",
+        "name": "Base + deltas (SFTP contact)",
+        "layout": "base_delta",
+        "account_id": 1133,
+        "base_rows": 10000000,
+        "delta_files": 45,
+        "delta_columns": [
+          "email_status",
+          "sms_status",
+          "is_deleted",
+          "is_contact",
+          "last_emailed",
+          "last_sms",
+          "email_suppressed_on",
+          "sms_suppressed_on",
+          "email_bounce_count",
+          "last_open",
+          "last_click",
+          "id",
+          "account_id",
+          "delta_seq",
+          "updated_at"
+        ],
+        "paths": {
+          "base_glob": "contact/base/**/*.parquet",
+          "delta_glob": "contact/delta/**/*.parquet",
+          "block_file_glob": "block_file_data/*.parquet"
+        }
+      },
+      "row_count": 10000000,
+      "delta_row_count": 5400000,
+      "delta_file_count": 45,
+      "row_count_human": "10,000,000"
+    },
+    {
+      "id": "dummy_base_delta_10",
+      "name": "Base + deltas (compacted 10)",
+      "path": "/Users/lumegalabs/Projects/php-parquet-duckdb/data/dummy_base_delta_10",
+      "layout": "base_delta",
+      "description": "Same lake as 45-delta source after folding older deltas into base; 10 delta files left",
+      "size_bytes": 62487395,
+      "size_human": "59.6 MB",
+      "meta": {
+        "id": "dummy_base_delta_10",
+        "name": "Base + deltas (compacted 10)",
+        "layout": "base_delta",
+        "account_id": 1133,
+        "base_rows": 10000000,
+        "delta_files": 10,
+        "compacted_from": "/Users/lumegalabs/Projects/php-parquet-duckdb/data/dummy_base_delta",
+        "folded_delta_files": 35,
+        "delta_columns": [
+          "email_status",
+          "sms_status",
+          "is_deleted",
+          "is_contact",
+          "last_emailed",
+          "last_sms",
+          "email_suppressed_on",
+          "sms_suppressed_on",
+          "email_bounce_count",
+          "last_open",
+          "last_click",
+          "id",
+          "account_id",
+          "delta_seq",
+          "updated_at"
+        ],
+        "paths": {
+          "base_glob": "contact/base/**/*.parquet",
+          "delta_glob": "contact/delta/**/*.parquet",
+          "block_file_glob": "block_file_data/*.parquet"
+        }
+      },
+      "row_count": 10000000,
+      "delta_row_count": 1200000,
+      "delta_file_count": 10,
+      "row_count_human": "10,000,000"
+    },
+    {
+      "id": "dummy",
+      "name": "Tiny demo",
+      "path": "/Users/lumegalabs/Projects/php-parquet-duckdb/data/dummy",
+      "layout": "flat",
+      "description": "Small fixed fixture for local smoke tests",
+      "size_bytes": 4106,
+      "size_human": "4.01 KB",
+      "meta": {
+        "id": "dummy",
+        "name": "Tiny demo",
+        "layout": "flat",
+        "description": "Small fixed fixture for local smoke tests"
+      },
+      "row_count": 15,
+      "row_count_human": "15"
+    }
+  ],
+  "results": [
+    {
+      "http_concurrency": 1,
+      "http_requests": 32,
+      "query_parallel": false,
+      "ok": 32,
+      "errors": 0,
+      "wall_ms": 89466.9,
+      "throughput_rps": 0.36,
+      "latency_ms": {
+        "n": 32,
+        "min": 2752.1,
+        "p50": 2795.9,
+        "p95": 2826.7,
+        "p99": 2830.7,
+        "max": 2832.3,
+        "avg": 2795.8
+      },
+      "distinct_finals": [
+        2210000
+      ],
+      "source": "dummy_1cr",
+      "scenario": "seg_9001"
+    },
+    {
+      "http_concurrency": 4,
+      "http_requests": 32,
+      "query_parallel": false,
+      "ok": 32,
+      "errors": 0,
+      "wall_ms": 88609.2,
+      "throughput_rps": 0.36,
+      "latency_ms": {
+        "n": 32,
+        "min": 2751.5,
+        "p50": 11081.9,
+        "p95": 11138.4,
+        "p99": 11155.2,
+        "max": 11159.4,
+        "avg": 10558.6
+      },
+      "distinct_finals": [
+        2210000
+      ],
+      "source": "dummy_1cr",
+      "scenario": "seg_9001"
+    },
+    {
+      "http_concurrency": 8,
+      "http_requests": 32,
+      "query_parallel": false,
+      "ok": 32,
+      "errors": 0,
+      "wall_ms": 88427.6,
+      "throughput_rps": 0.36,
+      "latency_ms": {
+        "n": 32,
+        "min": 2756.3,
+        "p50": 22104.0,
+        "p95": 22131.7,
+        "p99": 22142.9,
+        "max": 22145.3,
+        "avg": 19693.7
+      },
+      "distinct_finals": [
+        2210000
+      ],
+      "source": "dummy_1cr",
+      "scenario": "seg_9001"
+    },
+    {
+      "http_concurrency": 1,
+      "http_requests": 32,
+      "query_parallel": true,
+      "ok": 32,
+      "errors": 0,
+      "wall_ms": 40643.4,
+      "throughput_rps": 0.79,
+      "latency_ms": {
+        "n": 32,
+        "min": 1233.0,
+        "p50": 1265.3,
+        "p95": 1316.5,
+        "p99": 1358.0,
+        "max": 1372.0,
+        "avg": 1270.1
+      },
+      "distinct_finals": [
+        2210000
+      ],
+      "source": "dummy_1cr",
+      "scenario": "seg_9001"
+    },
+    {
+      "http_concurrency": 4,
+      "http_requests": 32,
+      "query_parallel": true,
+      "ok": 32,
+      "errors": 0,
+      "wall_ms": 41064.4,
+      "throughput_rps": 0.78,
+      "latency_ms": {
+        "n": 32,
+        "min": 1267.5,
+        "p50": 5130.4,
+        "p95": 5177.0,
+        "p99": 5181.6,
+        "max": 5181.7,
+        "avg": 4889.5
+      },
+      "distinct_finals": [
+        2210000
+      ],
+      "source": "dummy_1cr",
+      "scenario": "seg_9001"
+    },
+    {
+      "http_concurrency": 8,
+      "http_requests": 32,
+      "query_parallel": true,
+      "ok": 32,
+      "errors": 0,
+      "wall_ms": 41695.3,
+      "throughput_rps": 0.77,
+      "latency_ms": {
+        "n": 32,
+        "min": 1296.2,
+        "p50": 10422.6,
+        "p95": 10496.8,
+        "p99": 10497.3,
+        "max": 10497.6,
+        "avg": 9284.1
+      },
+      "distinct_finals": [
+        2210000
+      ],
+      "source": "dummy_1cr",
+      "scenario": "seg_9001"
+    },
+    {
+      "http_concurrency": 1,
+      "http_requests": 32,
+      "query_parallel": false,
+      "ok": 32,
+      "errors": 0,
+      "wall_ms": 192366.9,
+      "throughput_rps": 0.17,
+      "latency_ms": {
+        "n": 32,
+        "min": 5966.7,
+        "p50": 6011.8,
+        "p95": 6040.4,
+        "p99": 6045.6,
+        "max": 6047.0,
+        "avg": 6011.4
+      },
+      "distinct_finals": [
+        2113919
+      ],
+      "source": "dummy_base_delta",
+      "scenario": "seg_9001"
+    },
+    {
+      "http_concurrency": 4,
+      "http_requests": 32,
+      "query_parallel": false,
+      "ok": 32,
+      "errors": 0,
+      "wall_ms": 191546.6,
+      "throughput_rps": 0.17,
+      "latency_ms": {
+        "n": 32,
+        "min": 6008.1,
+        "p50": 23898.2,
+        "p95": 24101.5,
+        "p99": 24121.4,
+        "max": 24130.4,
+        "avg": 22820.2
+      },
+      "distinct_finals": [
+        2113919
+      ],
+      "source": "dummy_base_delta",
+      "scenario": "seg_9001"
+    },
+    {
+      "http_concurrency": 8,
+      "http_requests": 32,
+      "query_parallel": false,
+      "ok": 32,
+      "errors": 0,
+      "wall_ms": 190059.7,
+      "throughput_rps": 0.17,
+      "latency_ms": {
+        "n": 32,
+        "min": 5952.5,
+        "p50": 47444.1,
+        "p95": 47681.0,
+        "p99": 47696.8,
+        "max": 47699.7,
+        "avg": 42333.9
+      },
+      "distinct_finals": [
+        2113919
+      ],
+      "source": "dummy_base_delta",
+      "scenario": "seg_9001"
+    },
+    {
+      "http_concurrency": 1,
+      "http_requests": 32,
+      "query_parallel": true,
+      "ok": 32,
+      "errors": 0,
+      "wall_ms": 74218.1,
+      "throughput_rps": 0.43,
+      "latency_ms": {
+        "n": 32,
+        "min": 2212.3,
+        "p50": 2315.6,
+        "p95": 2402.2,
+        "p99": 2490.8,
+        "max": 2526.5,
+        "avg": 2319.3
+      },
+      "distinct_finals": [
+        2113919
+      ],
+      "source": "dummy_base_delta",
+      "scenario": "seg_9001"
+    },
+    {
+      "http_concurrency": 4,
+      "http_requests": 32,
+      "query_parallel": true,
+      "ok": 32,
+      "errors": 0,
+      "wall_ms": 74109.7,
+      "throughput_rps": 0.43,
+      "latency_ms": {
+        "n": 32,
+        "min": 2318.9,
+        "p50": 9220.3,
+        "p95": 9404.0,
+        "p99": 9415.4,
+        "max": 9419.5,
+        "avg": 8829.8
+      },
+      "distinct_finals": [
+        2113919
+      ],
+      "source": "dummy_base_delta",
+      "scenario": "seg_9001"
+    },
+    {
+      "http_concurrency": 8,
+      "http_requests": 32,
+      "query_parallel": true,
+      "ok": 32,
+      "errors": 0,
+      "wall_ms": 73302.3,
+      "throughput_rps": 0.44,
+      "latency_ms": {
+        "n": 32,
+        "min": 2290.3,
+        "p50": 18302.9,
+        "p95": 18373.4,
+        "p99": 18410.2,
+        "max": 18426.5,
+        "avg": 16322.9
+      },
+      "distinct_finals": [
+        2113919
+      ],
+      "source": "dummy_base_delta",
+      "scenario": "seg_9001"
+    },
+    {
+      "http_concurrency": 1,
+      "http_requests": 32,
+      "query_parallel": false,
+      "ok": 32,
+      "errors": 0,
+      "wall_ms": 126197.6,
+      "throughput_rps": 0.25,
+      "latency_ms": {
+        "n": 32,
+        "min": 3900.5,
+        "p50": 3942.5,
+        "p95": 3974.6,
+        "p99": 3977.0,
+        "max": 3977.1,
+        "avg": 3943.6
+      },
+      "distinct_finals": [
+        2113919
+      ],
+      "source": "dummy_base_delta_10",
+      "scenario": "seg_9001"
+    },
+    {
+      "http_concurrency": 4,
+      "http_requests": 32,
+      "query_parallel": false,
+      "ok": 32,
+      "errors": 0,
+      "wall_ms": 126183.6,
+      "throughput_rps": 0.25,
+      "latency_ms": {
+        "n": 32,
+        "min": 3968.5,
+        "p50": 15765.0,
+        "p95": 15867.7,
+        "p99": 15879.8,
+        "max": 15884.4,
+        "avg": 15034.3
+      },
+      "distinct_finals": [
+        2113919
+      ],
+      "source": "dummy_base_delta_10",
+      "scenario": "seg_9001"
+    },
+    {
+      "http_concurrency": 8,
+      "http_requests": 32,
+      "query_parallel": false,
+      "ok": 32,
+      "errors": 0,
+      "wall_ms": 126290.6,
+      "throughput_rps": 0.25,
+      "latency_ms": {
+        "n": 32,
+        "min": 4001.3,
+        "p50": 31554.2,
+        "p95": 31596.8,
+        "p99": 31599.5,
+        "max": 31600.2,
+        "avg": 28118.2
+      },
+      "distinct_finals": [
+        2113919
+      ],
+      "source": "dummy_base_delta_10",
+      "scenario": "seg_9001"
+    },
+    {
+      "http_concurrency": 1,
+      "http_requests": 32,
+      "query_parallel": true,
+      "ok": 32,
+      "errors": 0,
+      "wall_ms": 53964.9,
+      "throughput_rps": 0.59,
+      "latency_ms": {
+        "n": 32,
+        "min": 1615.6,
+        "p50": 1687.1,
+        "p95": 1738.4,
+        "p99": 1768.0,
+        "max": 1774.9,
+        "avg": 1686.4
+      },
+      "distinct_finals": [
+        2113919
+      ],
+      "source": "dummy_base_delta_10",
+      "scenario": "seg_9001"
+    },
+    {
+      "http_concurrency": 4,
+      "http_requests": 32,
+      "query_parallel": true,
+      "ok": 32,
+      "errors": 0,
+      "wall_ms": 55350.8,
+      "throughput_rps": 0.58,
+      "latency_ms": {
+        "n": 32,
+        "min": 1706.6,
+        "p50": 6902.9,
+        "p95": 7026.4,
+        "p99": 7035.4,
+        "max": 7039.1,
+        "avg": 6591.3
+      },
+      "distinct_finals": [
+        2113919
+      ],
+      "source": "dummy_base_delta_10",
+      "scenario": "seg_9001"
+    },
+    {
+      "http_concurrency": 8,
+      "http_requests": 32,
+      "query_parallel": true,
+      "ok": 32,
+      "errors": 0,
+      "wall_ms": 54653.9,
+      "throughput_rps": 0.59,
+      "latency_ms": {
+        "n": 32,
+        "min": 1717.9,
+        "p50": 13605.1,
+        "p95": 13812.2,
+        "p99": 13833.3,
+        "max": 13834.1,
+        "avg": 12182.1
+      },
+      "distinct_finals": [
+        2113919
+      ],
+      "source": "dummy_base_delta_10",
+      "scenario": "seg_9001"
+    }
+  ]
+}

@@ -1,0 +1,277 @@
+{
+  "compare": "optimized single_query vs multi+parallel",
+  "warmup": 2,
+  "runs": 5,
+  "pool": "8x4 / 2GB",
+  "results": [
+    {
+      "source": "dummy_1cr",
+      "scenario": "seg_9001",
+      "mode": "multi_par",
+      "p50_ms": 645.7,
+      "p95_ms": 654.5,
+      "avg_ms": 647.2,
+      "final_target": 2210000,
+      "metrics_match": true,
+      "times_ms": [
+        642.8,
+        644.9,
+        645.7,
+        648.1,
+        654.5
+      ]
+    },
+    {
+      "source": "dummy_1cr",
+      "scenario": "seg_9001",
+      "mode": "single",
+      "p50_ms": 704.1,
+      "p95_ms": 717.6,
+      "avg_ms": 705.0,
+      "final_target": 2210000,
+      "metrics_match": true,
+      "times_ms": [
+        694.5,
+        703.1,
+        704.1,
+        705.5,
+        717.6
+      ]
+    },
+    {
+      "source": "dummy_1cr",
+      "scenario": "seg_excl_bf",
+      "mode": "multi_par",
+      "p50_ms": 1491.0,
+      "p95_ms": 1531.1,
+      "avg_ms": 1484.6,
+      "final_target": 3627461,
+      "metrics_match": true,
+      "times_ms": [
+        1423.7,
+        1474.7,
+        1491.0,
+        1502.3,
+        1531.1
+      ]
+    },
+    {
+      "source": "dummy_1cr",
+      "scenario": "seg_excl_bf",
+      "mode": "single",
+      "p50_ms": 2487.6,
+      "p95_ms": 2528.4,
+      "avg_ms": 2473.5,
+      "final_target": 3627461,
+      "metrics_match": true,
+      "times_ms": [
+        2384.3,
+        2456.8,
+        2487.6,
+        2510.4,
+        2528.4
+      ]
+    },
+    {
+      "source": "dummy_base_delta_10",
+      "scenario": "seg_9001",
+      "mode": "multi_par",
+      "p50_ms": 1024.2,
+      "p95_ms": 1028.4,
+      "avg_ms": 1022.3,
+      "final_target": 2113919,
+      "metrics_match": true,
+      "times_ms": [
+        1009.8,
+        1021.8,
+        1024.2,
+        1027.2,
+        1028.4
+      ]
+    },
+    {
+      "source": "dummy_base_delta_10",
+      "scenario": "seg_9001",
+      "mode": "single",
+      "p50_ms": 865.4,
+      "p95_ms": 867.0,
+      "avg_ms": 865.6,
+      "final_target": 2113919,
+      "metrics_match": true,
+      "times_ms": [
+        863.6,
+        865.2,
+        865.4,
+        866.8,
+        867.0
+      ]
+    },
+    {
+      "source": "dummy_base_delta_10",
+      "scenario": "seg_excl_bf",
+      "mode": "multi_par",
+      "p50_ms": 1986.5,
+      "p95_ms": 2005.6,
+      "avg_ms": 1987.7,
+      "final_target": 3420687,
+      "metrics_match": true,
+      "times_ms": [
+        1969.8,
+        1983.3,
+        1986.5,
+        1993.5,
+        2005.6
+      ]
+    },
+    {
+      "source": "dummy_base_delta_10",
+      "scenario": "seg_excl_bf",
+      "mode": "single",
+      "p50_ms": 3260.9,
+      "p95_ms": 3415.1,
+      "avg_ms": 3257.1,
+      "final_target": 3420687,
+      "metrics_match": true,
+      "times_ms": [
+        3081.2,
+        3167.9,
+        3260.9,
+        3360.1,
+        3415.1
+      ]
+    },
+    {
+      "source": "dummy_base_delta",
+      "scenario": "seg_9001",
+      "mode": "multi_par",
+      "p50_ms": 1684.5,
+      "p95_ms": 1691.1,
+      "avg_ms": 1684.0,
+      "final_target": 2113919,
+      "metrics_match": true,
+      "times_ms": [
+        1675.6,
+        1679.2,
+        1684.5,
+        1689.4,
+        1691.1
+      ]
+    },
+    {
+      "source": "dummy_base_delta",
+      "scenario": "seg_9001",
+      "mode": "single",
+      "p50_ms": 1036.4,
+      "p95_ms": 1094.6,
+      "avg_ms": 1049.6,
+      "final_target": 2113919,
+      "metrics_match": true,
+      "times_ms": [
+        1026.3,
+        1030.1,
+        1036.4,
+        1060.6,
+        1094.6
+      ]
+    },
+    {
+      "source": "dummy_base_delta",
+      "scenario": "seg_excl_bf",
+      "mode": "multi_par",
+      "p50_ms": 2809.6,
+      "p95_ms": 2837.2,
+      "avg_ms": 2778.8,
+      "final_target": 3420687,
+      "metrics_match": true,
+      "times_ms": [
+        2704.2,
+        2730.4,
+        2809.6,
+        2812.7,
+        2837.2
+      ]
+    },
+    {
+      "source": "dummy_base_delta",
+      "scenario": "seg_excl_bf",
+      "mode": "single",
+      "p50_ms": 1604.1,
+      "p95_ms": 1617.2,
+      "avg_ms": 1603.0,
+      "final_target": 3420687,
+      "metrics_match": true,
+      "times_ms": [
+        1585.7,
+        1593.8,
+        1604.1,
+        1614.4,
+        1617.2
+      ]
+    }
+  ],
+  "summary": [
+    {
+      "source": "dummy_1cr",
+      "scenario": "seg_9001",
+      "multi_par_p50_ms": 645.7,
+      "single_p50_ms": 704.1,
+      "winner": "multi_par",
+      "speedup": 1.09,
+      "metrics_match": true
+    },
+    {
+      "source": "dummy_1cr",
+      "scenario": "seg_excl_bf",
+      "multi_par_p50_ms": 1491.0,
+      "single_p50_ms": 2487.6,
+      "winner": "multi_par",
+      "speedup": 1.67,
+      "metrics_match": true
+    },
+    {
+      "source": "dummy_base_delta_10",
+      "scenario": "seg_9001",
+      "multi_par_p50_ms": 1024.2,
+      "single_p50_ms": 865.4,
+      "winner": "single",
+      "speedup": 1.18,
+      "metrics_match": true
+    },
+    {
+      "source": "dummy_base_delta_10",
+      "scenario": "seg_excl_bf",
+      "multi_par_p50_ms": 1986.5,
+      "single_p50_ms": 3260.9,
+      "winner": "multi_par",
+      "speedup": 1.64,
+      "metrics_match": true
+    },
+    {
+      "source": "dummy_base_delta",
+      "scenario": "seg_9001",
+      "multi_par_p50_ms": 1684.5,
+      "single_p50_ms": 1036.4,
+      "winner": "single",
+      "speedup": 1.63,
+      "metrics_match": true
+    },
+    {
+      "source": "dummy_base_delta",
+      "scenario": "seg_excl_bf",
+      "multi_par_p50_ms": 2809.6,
+      "single_p50_ms": 1604.1,
+      "winner": "single",
+      "speedup": 1.75,
+      "metrics_match": true
+    }
+  ],
+  "overall": {
+    "multi_par_median_p50_ms": 1587.8,
+    "single_median_p50_ms": 1320.2,
+    "wins": {
+      "multi_par": 3,
+      "single": 3,
+      "tie": 0
+    }
+  }
+}

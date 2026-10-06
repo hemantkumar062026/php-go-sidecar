@@ -269,6 +269,7 @@ final class Http
                 'driver' => Session::driver(),
                 'sidecar' => getenv('DUCKDB_SIDECAR_URL') ?: null,
                 'parallel' => (bool) ($result['parallel'] ?? false),
+                'single_query' => (bool) ($result['single_query'] ?? false),
                 'duckdb' => [
                     'binary' => $cfg['binary'],
                     'parquetPath' => $cfg['parquetPath'],

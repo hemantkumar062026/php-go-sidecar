@@ -186,8 +186,15 @@
         </select>
       </div>
       <div>
-        <label for="parallel_flag">Query mode</label>
+        <label for="single_query_flag">Query shape</label>
         <label style="display:flex;align-items:center;gap:0.45rem;font-weight:500;min-height:38px">
+          <input id="single_query_flag" type="checkbox" style="min-width:auto;width:auto" />
+          Single query (merge all counts)
+        </label>
+      </div>
+      <div>
+        <label for="parallel_flag">Query mode</label>
+        <label style="display:flex;align-items:center;gap:0.45rem;font-weight:500;min-height:38px" id="parallel_wrap">
           <input id="parallel_flag" type="checkbox" style="min-width:auto;width:auto" />
           Parallel counts
         </label>
@@ -937,7 +944,9 @@
     function setFinalSql(sqlMap) {
       const el = $('final_sql');
       if (!el) return;
-      const finalSql = sqlMap && sqlMap.final_target ? String(sqlMap.final_target) : '';
+      const finalSql = sqlMap && (sqlMap.merged || sqlMap.final_target)
+        ? String(sqlMap.merged || sqlMap.final_target)
+        : '';
       if (!finalSql) {
         el.textContent = '(no final_target SQL in response)';
         return;
@@ -977,6 +986,7 @@
         segment_defs: defs,
         catalog_segments: Object.keys(defs).map(Number).filter(Number.isFinite),
         catalog_block_files: Object.keys(BLOCK_FILE_DEFS).map(Number).filter(Number.isFinite),
+        single_query: !!( $('single_query_flag') && $('single_query_flag').checked ),
         parallel: !!( $('parallel_flag') && $('parallel_flag').checked ),
       };
       const t0 = performance.now();
@@ -989,7 +999,8 @@
         setMetrics(data.metrics || {});
         setCampaignPayload(data.campaign, body);
         setFinalSql(data.sql || {});
-        const mode = data.parallel ? 'parallel' : 'sequential';
+        const shape = data.single_query ? 'single query' : 'multi query';
+        const mode = data.single_query ? shape : (data.parallel ? 'multi · parallel' : 'multi · sequential');
         $('status').textContent = `Campaign #${camp.id} · ${mode} · ${Math.round(performance.now() - t0)} ms`;
       } catch (e) {
         $('err').hidden = false;
@@ -1010,11 +1021,27 @@
         }
       });
     }
+    function syncQueryModeUi() {
+      const single = $('single_query_flag') && $('single_query_flag').checked;
+      const par = $('parallel_flag');
+      if (par) {
+        par.disabled = !!single;
+        if (single) par.checked = false;
+      }
+    }
+
+    if ($('single_query_flag')) {
+      $('single_query_flag').addEventListener('change', () => {
+        syncQueryModeUi();
+        if (selected) preview(selected);
+      });
+    }
     if ($('parallel_flag')) {
       $('parallel_flag').addEventListener('change', () => {
         if (selected) preview(selected);
       });
     }
+    syncQueryModeUi();
     renderAvailableSegments();
     renderAvailableBlocks();
     loadCampaigns();

@@ -1,0 +1,61 @@
+{
+  "optimized": true,
+  "results": [
+    {
+      "source": "dummy_1cr",
+      "scenario": "seg_9001",
+      "mode": "multi_par",
+      "p50": 681.1,
+      "ok": true
+    },
+    {
+      "source": "dummy_1cr",
+      "scenario": "seg_9001",
+      "mode": "single",
+      "p50": 712.3,
+      "ok": true
+    },
+    {
+      "source": "dummy_1cr",
+      "scenario": "seg_excl_bf",
+      "mode": "multi_par",
+      "p50": 1536.5,
+      "ok": true
+    },
+    {
+      "source": "dummy_1cr",
+      "scenario": "seg_excl_bf",
+      "mode": "single",
+      "p50": 2691.5,
+      "ok": true
+    },
+    {
+      "source": "dummy_base_delta_10",
+      "scenario": "seg_9001",
+      "mode": "multi_par",
+      "p50": 1117.0,
+      "ok": true
+    },
+    {
+      "source": "dummy_base_delta_10",
+      "scenario": "seg_9001",
+      "mode": "single",
+      "p50": 883.2,
+      "ok": true
+    },
+    {
+      "source": "dummy_base_delta_10",
+      "scenario": "seg_excl_bf",
+      "mode": "multi_par",
+      "p50": 2023.1,
+      "ok": true
+    },
+    {
+      "source": "dummy_base_delta_10",
+      "scenario": "seg_excl_bf",
+      "mode": "single",
+      "p50": 3196.6,
+      "ok": true
+    }
+  ]
+}

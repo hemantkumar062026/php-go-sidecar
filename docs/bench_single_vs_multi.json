@@ -1,0 +1,312 @@
+{
+  "runs": 5,
+  "warmup": 2,
+  "results": [
+    {
+      "source": "dummy_1cr",
+      "scenario": "seg_9001",
+      "mode": "multi_seq",
+      "p50_ms": 1288.1,
+      "p95_ms": 1297.1,
+      "avg_ms": 1292.1,
+      "final_target": 2210000,
+      "metrics_match_multi_seq": true,
+      "times": [
+        1279.7,
+        1282.1,
+        1288.1,
+        1297.1,
+        1313.5
+      ]
+    },
+    {
+      "source": "dummy_1cr",
+      "scenario": "seg_9001",
+      "mode": "multi_par",
+      "p50_ms": 663.5,
+      "p95_ms": 667.6,
+      "avg_ms": 663.2,
+      "final_target": 2210000,
+      "metrics_match_multi_seq": true,
+      "times": [
+        655.9,
+        660.9,
+        663.5,
+        667.6,
+        667.9
+      ]
+    },
+    {
+      "source": "dummy_1cr",
+      "scenario": "seg_9001",
+      "mode": "single",
+      "p50_ms": 1896.5,
+      "p95_ms": 1941.5,
+      "avg_ms": 1880.1,
+      "final_target": 2210000,
+      "metrics_match_multi_seq": true,
+      "times": [
+        1654.1,
+        1695.6,
+        1896.5,
+        1941.5,
+        2212.8
+      ]
+    },
+    {
+      "source": "dummy_1cr",
+      "scenario": "seg_excl_bf",
+      "mode": "multi_seq",
+      "p50_ms": 2855.5,
+      "p95_ms": 2864.7,
+      "avg_ms": 2858.7,
+      "final_target": 3627461,
+      "metrics_match_multi_seq": true,
+      "times": [
+        2850.7,
+        2853.3,
+        2855.5,
+        2864.7,
+        2869.4
+      ]
+    },
+    {
+      "source": "dummy_1cr",
+      "scenario": "seg_excl_bf",
+      "mode": "multi_par",
+      "p50_ms": 1514.4,
+      "p95_ms": 1542.8,
+      "avg_ms": 1530.4,
+      "final_target": 3627461,
+      "metrics_match_multi_seq": true,
+      "times": [
+        1499.4,
+        1499.4,
+        1514.4,
+        1542.8,
+        1596.1
+      ]
+    },
+    {
+      "source": "dummy_1cr",
+      "scenario": "seg_excl_bf",
+      "mode": "single",
+      "p50_ms": 9599.1,
+      "p95_ms": 9698.0,
+      "avg_ms": 9503.2,
+      "final_target": 3627461,
+      "metrics_match_multi_seq": true,
+      "times": [
+        7785.3,
+        9377.0,
+        9599.1,
+        9698.0,
+        11056.8
+      ]
+    },
+    {
+      "source": "dummy_base_delta_10",
+      "scenario": "seg_9001",
+      "mode": "multi_seq",
+      "p50_ms": 4209.9,
+      "p95_ms": 4235.8,
+      "avg_ms": 3806.5,
+      "final_target": 2113919,
+      "metrics_match_multi_seq": true,
+      "times": [
+        3146.1,
+        3195.9,
+        4209.9,
+        4235.8,
+        4244.8
+      ]
+    },
+    {
+      "source": "dummy_base_delta_10",
+      "scenario": "seg_9001",
+      "mode": "multi_par",
+      "p50_ms": 2143.4,
+      "p95_ms": 2856.2,
+      "avg_ms": 2490.6,
+      "final_target": 2113919,
+      "metrics_match_multi_seq": true,
+      "times": [
+        2094.7,
+        2115.6,
+        2143.4,
+        2856.2,
+        3243.2
+      ]
+    },
+    {
+      "source": "dummy_base_delta_10",
+      "scenario": "seg_9001",
+      "mode": "single",
+      "p50_ms": 4459.3,
+      "p95_ms": 5803.9,
+      "avg_ms": 4936.2,
+      "final_target": 2113919,
+      "metrics_match_multi_seq": true,
+      "times": [
+        3941.2,
+        4251.6,
+        4459.3,
+        5803.9,
+        6224.9
+      ]
+    },
+    {
+      "source": "dummy_base_delta_10",
+      "scenario": "seg_excl_bf",
+      "mode": "multi_seq",
+      "p50_ms": 7782.6,
+      "p95_ms": 7874.7,
+      "avg_ms": 7085.7,
+      "final_target": 3420687,
+      "metrics_match_multi_seq": true,
+      "times": [
+        5929.7,
+        5957.6,
+        7782.6,
+        7874.7,
+        7884.0
+      ]
+    },
+    {
+      "source": "dummy_base_delta_10",
+      "scenario": "seg_excl_bf",
+      "mode": "multi_par",
+      "p50_ms": 4201.0,
+      "p95_ms": 11711.5,
+      "avg_ms": 7260.1,
+      "final_target": 3420687,
+      "metrics_match_multi_seq": true,
+      "times": [
+        4145.2,
+        4164.6,
+        4201.0,
+        11711.5,
+        12078.5
+      ]
+    },
+    {
+      "source": "dummy_base_delta_10",
+      "scenario": "seg_excl_bf",
+      "mode": "single",
+      "p50_ms": 19361.5,
+      "p95_ms": 19666.4,
+      "avg_ms": 16227.3,
+      "final_target": 3420687,
+      "metrics_match_multi_seq": true,
+      "times": [
+        10458.4,
+        11712.6,
+        19361.5,
+        19666.4,
+        19937.4
+      ]
+    },
+    {
+      "source": "dummy_base_delta",
+      "scenario": "seg_9001",
+      "mode": "multi_seq",
+      "p50_ms": 6404.5,
+      "p95_ms": 6449.0,
+      "avg_ms": 5846.7,
+      "final_target": 2113919,
+      "metrics_match_multi_seq": true,
+      "times": [
+        4950.9,
+        4961.6,
+        6404.5,
+        6449.0,
+        6467.4
+      ]
+    },
+    {
+      "source": "dummy_base_delta",
+      "scenario": "seg_9001",
+      "mode": "multi_par",
+      "p50_ms": 3570.5,
+      "p95_ms": 4819.0,
+      "avg_ms": 4079.3,
+      "final_target": 2113919,
+      "metrics_match_multi_seq": true,
+      "times": [
+        3539.2,
+        3561.6,
+        3570.5,
+        4819.0,
+        4906.2
+      ]
+    },
+    {
+      "source": "dummy_base_delta",
+      "scenario": "seg_9001",
+      "mode": "single",
+      "p50_ms": 6714.3,
+      "p95_ms": 8454.8,
+      "avg_ms": 7337.5,
+      "final_target": 2113919,
+      "metrics_match_multi_seq": true,
+      "times": [
+        6371.4,
+        6532.9,
+        6714.3,
+        8454.8,
+        8614.3
+      ]
+    },
+    {
+      "source": "dummy_base_delta",
+      "scenario": "seg_excl_bf",
+      "mode": "multi_seq",
+      "p50_ms": 10692.5,
+      "p95_ms": 10744.7,
+      "avg_ms": 9742.5,
+      "final_target": 3420687,
+      "metrics_match_multi_seq": true,
+      "times": [
+        8228.4,
+        8287.5,
+        10692.5,
+        10744.7,
+        10759.6
+      ]
+    },
+    {
+      "source": "dummy_base_delta",
+      "scenario": "seg_excl_bf",
+      "mode": "multi_par",
+      "p50_ms": 5889.1,
+      "p95_ms": 13209.8,
+      "avg_ms": 8976.9,
+      "final_target": 3420687,
+      "metrics_match_multi_seq": true,
+      "times": [
+        5726.8,
+        5777.4,
+        5889.1,
+        13209.8,
+        14281.2
+      ]
+    },
+    {
+      "source": "dummy_base_delta",
+      "scenario": "seg_excl_bf",
+      "mode": "single",
+      "p50_ms": 11368.0,
+      "p95_ms": 11507.2,
+      "avg_ms": 12130.1,
+      "final_target": 3627461,
+      "metrics_match_multi_seq": false,
+      "times": [
+        9635.2,
+        9697.0,
+        11368.0,
+        11507.2,
+        18442.9
+      ]
+    }
+  ]
+}

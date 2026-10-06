@@ -92,9 +92,20 @@ final class QueryParser
 
         $countSql = 'SELECT COUNT(*) AS cnt FROM ' . $from . ' WHERE ' . $where;
 
+        $baseWhereParts = [
+            self::quoteIdent('account_id', $dialect) . ' = ' . $accountId,
+        ];
+        if (!($input['include_deleted'] ?? false)) {
+            $baseWhereParts[] = self::quoteIdent('is_deleted', $dialect) . ' = 0';
+        }
+        $baseWhere = implode(' AND ', $baseWhereParts);
+
         return [
             'account_id' => $accountId,
             'table' => SftpContact::tableName($accountId),
+            'from' => $from,
+            'base_where' => $baseWhere,
+            'user_where' => $userWhere,
             'where' => $where,
             'select_sql' => $selectSql,
             'count_sql' => $countSql,
